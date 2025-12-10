@@ -21,7 +21,22 @@
     <div class="container">
         <div class="card border-0 shadow-sm">
             <div class="card-body">
-                <h4 class="mb-4">Manajemen Laporan</h4>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    
+    <h4 class="mb-0 fw-bold text-dark">Manajemen Laporan</h4>
+
+    <div class="btn-group">
+        <button class="btn btn-outline-secondary btn-sm" onclick="loadAdminData('newest')">
+            <i class="fas fa-clock me-1"></i> Terbaru
+        </button>
+        <button class="btn btn-outline-danger btn-sm" onclick="loadAdminData('likes')">
+            <i class="fas fa-fire me-1"></i> Paling Viral
+        </button>
+    </div>
+
+</div>
+
+                
 
                 <div class="table-responsive">
                     <table class="table table-hover align-middle">
@@ -57,8 +72,6 @@
             API_URL = "http://127.0.0.1:8000";
             console.log("🔧 Running in Development Mode");
         } else {
-            // Kalo enggak (berarti di Cloud), tembak ke Backend Cloud Run
-            // MASUKKAN URL CLOUD RUN LU DI SINI (Tanpa slash di akhir)
             API_URL = "https://backend-service-255243454378.asia-southeast2.run.app";
             console.log("☁️ Running in Production Mode");
         }
@@ -78,11 +91,9 @@
         }
 
         // 2. Load Data Laporan
-        async function loadAdminData() {
+        async function loadAdminData(sortBy = 'newest') {
             try {
-                // Fetch biasa, gak perlu token buat GET (karena endpoint GET /reports kita public)
-                // Tapi kalau mau dibikin private juga bisa.
-                const res = await fetch(`${API_URL}/reports`);
+                const res = await fetch(`${API_URL}/reports?sort_by=${sortBy}`);
                 const data = await res.json();
                 const tbody = document.getElementById('tableBody');
 
