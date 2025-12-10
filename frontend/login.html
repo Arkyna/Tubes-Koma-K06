@@ -106,16 +106,25 @@
 
                 if (res.ok) {
                     // === LOGIC PENYIMPANAN TOKEN ===
-                    // Simpan token sakti ini di brankas browser (localStorage)
                     localStorage.setItem('token', data.access_token);
                     localStorage.setItem('role', data.role);
 
+                    // Simpan username juga biar bisa dipajang di dashboard (Optional)
+                    // localStorage.setItem('username', usernameInput); 
+
                     alert("Login Berhasil! Mengalihkan...");
 
-                    // Redirect ke halaman Admin (Next Step kita)
-                    // Untuk sementara kita lempar ke index dulu biar keliatan efeknya
-                    window.location.href = "admin.html";
+                    // === LOGIC REDIRECT SESUAI ROLE ===
+                    if (data.role === 'admin') {
+                        // Kalau Admin -> Masuk ke Admin Panel
+                        window.location.href = "admin.html";
+                    } else {
+                        // Kalau User Biasa -> Balik ke Dashboard Utama
+                        window.location.href = "index.html";
+                    }
+
                 } else {
+                    // (error handling)
                     // Login Gagal
                     errorAlert.innerText = data.detail || "Login Gagal";
                     errorAlert.classList.remove('d-none');
