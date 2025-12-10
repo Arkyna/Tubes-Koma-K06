@@ -108,21 +108,24 @@ def login(creds: LoginRequest, db: Session = Depends(get_db)):
     }
 
 # UPDATE STATUS (Cuma Admin yang bisa)
-@app.put("/reports/{report_id}")
-def update_status(report_id: int, new_status: str, db: Session = Depends(get_db), user: dict = Depends(get_current_user)):
-    # Cek apakah dia admin?
-    if user['role'] != 'admin':
-        raise HTTPException(status_code=403, detail="Hanya admin yang boleh update!")
-
-    # Cari laporan
-    report = db.query(ReportModel).filter(ReportModel.id == report_id).first()
-    if not report:
-        raise HTTPException(status_code=404, detail="Laporan tidak ditemukan")
-    
-    # Update
-    report.status = new_status
+# Tambahkan 'user: dict = Depends(get_current_user)' di parameter
+@app.post("/reports")
+def create_report(
+    report: ReportCreate, 
+    db: Session = Depends(get_db), 
+    user: dict = Depends(get_current_user) # <-- WAJIB LOGIN BUAT LAPOR
+):
+    new_report = ReportModel(
+        title=report.title,
+        description=report.description,
+        facility=report.facility,
+        status="Pending",
+        username=user['username'] # <-- SIMPAN USERNAME DARI TOKEN
+    )
+    db.add(new_report)
     db.commit()
-    return {"message": "Status berhasil diupdate", "data": report}
+    db.refresh(new_report)
+    return {"message": "Success", "data": new_report}
 
 # DELETE LAPORAN  (Admin)
 @app.delete("/reports/{report_id}")
