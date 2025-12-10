@@ -1,61 +1,153 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-import psycopg2
+from sqlalchemy.orm import Session
+from fastapi import FastAPI, Depends, HTTPException, status, Header 
+from jose import jwt, JWTError
+from auth import SECRET_KEY, ALGORITHM
 import os
 
+# Import dari file-file yang udah kita pecah
+from database import engine, get_db, Base
+from models import ReportModel, UserModel
+from schemas import ReportCreate, LoginRequest
+from auth import get_password_hash, verify_password, create_access_token
+
+# Init App
 app = FastAPI()
 
-# ===== CORS =====
-origins = [
-    "*"
-]
+# Bikin Tabel Otomatis
+Base.metadata.create_all(bind=engine)
 
+# CORS Setup
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-# =================
 
-def get_db():
-    return psycopg2.connect(
-        host=os.getenv("DB_HOST"),
-        database=os.getenv("DB_NAME"),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASS")
-    )
+# === UTILS: AUTO CREATE ADMIN ===
+def create_default_admin():
+    # Kita panggil Session manual sebentar cuma buat init admin
+    from database import SessionLocal
+    db = SessionLocal()
+    try:
+        user = db.query(UserModel).filter(UserModel.username == "admin").first()
+        if not user:
+            print("👤 Creating default admin user...")
+            admin_user = UserModel(
+                username="admin",
+                password_hash=get_password_hash("admin123"),
+                role="admin"
+            )
+            db.add(admin_user)
+            db.commit()
+            print("✅ Admin created!")
+    finally:
+        db.close()
+
+create_default_admin()
+
+# Fungsi Cek Token (Dependency)
+def get_current_user(authorization: str = Header(None)):
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Token tidak ditemukan")
+    
+    try:
+        # Format header biasanya: "Bearer <token>"
+        token = authorization.replace("Bearer ", "")
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        role: str = payload.get("role")
+        if username is None:
+            raise HTTPException(status_code=401, detail="Token tidak valid")
+        return {"username": username, "role": role}
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Token kadaluarsa atau rusak")
+
+# === ENDPOINTS ===
+
+@app.get("/")
+def root():
+    return {"message": "Modular Backend Ready!", "mode": "Cloud" if os.getenv("DB_USER") else "Local"}
 
 @app.get("/reports")
-def get_reports():
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("SELECT id, title, description, facility, status, created_at FROM reports ORDER BY id DESC")
-    result = cur.fetchall()
-    cur.close()
-    conn.close()
-    return [
-        {
-            "id": r[0],
-            "title": r[1],
-            "description": r[2],
-            "facility": r[3],
-            "status": r[4],
-            "created_at": str(r[5])
-        }
-        for r in result
-    ]
+def get_reports(db: Session = Depends(get_db)):
+    return db.query(ReportModel).order_by(ReportModel.id.desc()).all()
 
 @app.post("/reports")
-def create_report(data: dict):
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute(
-        "INSERT INTO reports (title, description, facility) VALUES (%s, %s, %s)",
-        (data["title"], data["description"], data["facility"])
+def create_report(report: ReportCreate, db: Session = Depends(get_db)):
+    new_report = ReportModel(
+        title=report.title,
+        description=report.description,
+        facility=report.facility,
+        status="Pending"
     )
-    conn.commit()
-    cur.close()
-    conn.close()
-    return {"message": "report created"}
+    db.add(new_report)
+    db.commit()
+    db.refresh(new_report)
+    return {"message": "Success", "data": new_report}
+
+@app.post("/login")
+def login(creds: LoginRequest, db: Session = Depends(get_db)):
+    user = db.query(UserModel).filter(UserModel.username == creds.username).first()
+    
+    if not user or not verify_password(creds.password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Username atau Password salah",
+        )
+    
+    access_token = create_access_token(data={"sub": user.username, "role": user.role})
+    
+    return {
+        "access_token": access_token, 
+        "token_type": "bearer",
+        "role": user.role
+    }
+
+# UPDATE STATUS (Cuma Admin yang bisa)
+@app.put("/reports/{report_id}")
+def update_status(report_id: int, new_status: str, db: Session = Depends(get_db), user: dict = Depends(get_current_user)):
+    # Cek apakah dia admin?
+    if user['role'] != 'admin':
+        raise HTTPException(status_code=403, detail="Hanya admin yang boleh update!")
+
+    # Cari laporan
+    report = db.query(ReportModel).filter(ReportModel.id == report_id).first()
+    if not report:
+        raise HTTPException(status_code=404, detail="Laporan tidak ditemukan")
+    
+    # Update
+    report.status = new_status
+    db.commit()
+    return {"message": "Status berhasil diupdate", "data": report}
+
+# DELETE LAPORAN  (Admin)
+@app.delete("/reports/{report_id}")
+def delete_report(report_id: int, db: Session = Depends(get_db), user: dict = Depends(get_current_user)):
+    if user['role'] != 'admin':
+        raise HTTPException(status_code=403, detail="Hanya admin yang boleh hapus!")
+
+    report = db.query(ReportModel).filter(ReportModel.id == report_id).first()
+    if not report:
+        raise HTTPException(status_code=404, detail="Laporan tidak ditemukan")
+    
+    db.delete(report)
+    db.commit()
+    return {"message": "Laporan berhasil dihapus"}
+
+# 1. GET Single Report
+@app.get("/reports/{report_id}")
+def get_report_detail(report_id: int, db: Session = Depends(get_db)):
+    report = db.query(ReportModel).filter(ReportModel.id == report_id).first()
+    if not report:
+        raise HTTPException(status_code=404, detail="Laporan tidak ditemukan")
+    return report
+
+# 2. GET My Reports ( Dashboard User Biasa)
+@app.get("/my-reports")
+def get_my_reports(db: Session = Depends(get_db), user: dict = Depends(get_current_user)):
+    
+    return db.query(ReportModel).filter(ReportModel.username == user['username']).order_by(ReportModel.id.desc()).all()
