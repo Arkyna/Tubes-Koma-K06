@@ -10,3 +10,9 @@ class ReportCreate(BaseModel):
 class LoginRequest(BaseModel):
     username: str
     password: str
+
+# Tambahkan di schemas.py
+class RegisterRequest(BaseModel):
+    username: str = Field(..., min_length=5, max_length=20, pattern="^[0-9]+$") 
+    # ^ pattern="^[0-9]+$" artinya HANYA BOLEH ANGKA (Simulasi NIM)
+    password: str = Field(..., min_length=6)
