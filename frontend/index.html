@@ -1,41 +1,128 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Facility Watch</title>
-    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { background-color: #f4f6f9; padding-top: 2rem; }
-        .card { transition: transform 0.2s; cursor: default; }
-        .card:hover { transform: translateY(-5px); }
+        body {
+            background-color: #f4f6f9;
+            padding-top: 2rem;
+        }
+
+        .card {
+            transition: transform 0.2s;
+            cursor: default;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .fab {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: #0d6efd;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 4px 15px rgba(13, 110, 253, 0.4);
+            cursor: pointer;
+            z-index: 1000;
+        }
+
+        .fab:hover {
+            background-color: #0b5ed7;
+            color: white;
+        }
     </style>
 </head>
+
 <body>
 
-    <div class="container">
-        <h2 class="mb-4 fw-bold text-primary">📋 Laporan Fasilitas</h2>
-        
+    <div class="container pb-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="fw-bold text-primary"><i class="fas fa-building me-2"></i>Laporan Fasilitas</h2>
+            <button class="btn btn-outline-primary btn-sm" onclick="loadReports()">Refresh</button>
+        </div>
+
+        <div class="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
+            <small class="text-muted">...</small>
+            <a href="detail.html?id=${r.id}" class="btn btn-sm btn-outline-primary rounded-pill">Lihat Detail</a>
+        </div>
+
         <div id="reports" class="row g-4">
             <div class="col-12 text-center mt-5">
                 <div class="spinner-border text-primary" role="status"></div>
-                <p>Loading data...</p>
+                <p>Memuat data...</p>
             </div>
         </div>
     </div>
 
-    <script>
-        // Ganti dengan URL Backend Cloud Run kamu yang asli
-        const API_URL = "https://backend-service-255243454378.asia-southeast2.run.app";
+    <div class="fab" data-bs-toggle="modal" data-bs-target="#addReportModal">
+        <i class="fas fa-plus"></i>
+    </div>
 
-        // Helper: Bikin warna badge status otomatis
+    <div class="modal fade" id="addReportModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Buat Laporan Baru</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="reportForm">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">JUDUL LAPORAN</label>
+                            <input type="text" id="inputTitle" class="form-control" required minlength="5"
+                                maxlength="100" placeholder="Min 5 huruf">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">LOKASI</label>
+                            <select id="inputFacility" class="form-select" required>
+                                <option value="" selected>Pilih Lokasi...</option>
+                                <option value="Gedung A">Gedung A</option>
+                                <option value="Gedung B">Gedung B</option>
+                                <option value="Kantin">Kantin</option>
+                                <option value="Parkiran">Parkiran</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">DESKRIPSI</label>
+                            <textarea id="inputDesc" class="form-control" rows="3" required minlength="10"
+                                maxlength="500" placeholder="Min 10 huruf..."></textarea>
+                            <div class="form-text text-end" id="charCount">0 / 500</div>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Kirim Laporan</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // ⚠️ PENTING: Ganti URL ini kalau sudah deploy ke Cloud Run!
+        // Kalau run di laptop pakai: "http://127.0.0.1:8000"
+        // Kalau deploy ganti jadi: "https://backend-service-xxxx.run.app"
+        const API_URL = "http://127.0.0.1:8000";
+
         function getBadge(status) {
             const s = status.toLowerCase();
-            if (s.includes('selesai') || s.includes('completed')) return 'bg-success';
-            if (s.includes('proses') || s.includes('progress')) return 'bg-warning text-dark';
-            return 'bg-danger'; // Default (Pending)
+            if (s.includes('selesai')) return 'bg-success';
+            if (s.includes('pending')) return 'bg-danger';
+            return 'bg-warning text-dark';
         }
 
         async function loadReports() {
@@ -44,44 +131,64 @@
                 const data = await res.json();
                 const container = document.getElementById("reports");
 
-                // Handle jika data kosong
                 if (data.length === 0) {
-                    container.innerHTML = `<div class="col-12 text-center text-muted"><h5>Belum ada laporan masuk.</h5></div>`;
+                    container.innerHTML = `<div class="col-12 text-center text-muted">Belum ada laporan.</div>`;
                     return;
                 }
 
-                // Render Data ke Card Bootstrap
                 container.innerHTML = data.map(r => `
                     <div class="col-md-6 col-lg-4">
-                        <div class="card h-100 shadow-sm border-0">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <span class="badge bg-secondary opacity-75">${r.facility}</span>
-                                    <span class="badge ${getBadge(r.status)} rounded-pill">${r.status}</span>
-                                </div>
-                                <h5 class="card-title fw-bold text-dark mt-2">${r.title}</h5>
-                                <p class="card-text text-secondary small">${r.description}</p>
+                        <div class="card h-100 shadow-sm border-0 p-3">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="badge bg-secondary opacity-75">${r.facility}</span>
+                                <span class="badge ${getBadge(r.status)} rounded-pill">${r.status}</span>
                             </div>
-                            <div class="card-footer bg-white border-0 pt-0">
-                                <small class="text-muted" style="font-size: 0.75rem;">
-                                    ID: #${r.id} &bull; ${new Date(r.created_at).toLocaleDateString('id-ID')}
-                                </small>
-                            </div>
+                            <h5 class="fw-bold">${r.title}</h5>
+                            <p class="text-secondary small text-truncate">${r.description}</p>
                         </div>
                     </div>
                 `).join("");
-
             } catch (error) {
                 console.error(error);
-                document.getElementById("reports").innerHTML = `
-                    <div class="col-12 text-center text-danger">
-                        Failed to load data from backend.
-                    </div>`;
+                document.getElementById("reports").innerHTML = `<div class="alert alert-danger">Gagal ambil data backend.</div>`;
             }
         }
 
-        // Jalankan fungsi
+        // Logic Submit Form
+        document.getElementById('reportForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const payload = {
+                title: document.getElementById('inputTitle').value,
+                facility: document.getElementById('inputFacility').value,
+                description: document.getElementById('inputDesc').value
+            };
+
+            try {
+                const res = await fetch(`${API_URL}/reports`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    alert("Berhasil lapor!");
+                    bootstrap.Modal.getInstance(document.getElementById('addReportModal')).hide();
+                    document.getElementById('reportForm').reset();
+                    loadReports();
+                } else {
+                    const err = await res.json();
+                    alert("Gagal: " + JSON.stringify(err.detail)); // Nampilin error validasi dari Backend
+                }
+            } catch (error) { alert("Error koneksi!"); }
+        });
+
+        // Hitung Karakter
+        document.getElementById('inputDesc').addEventListener('input', function () {
+            document.getElementById('charCount').innerText = `${this.value.length} / 500`;
+        });
+
         loadReports();
     </script>
 </body>
+
 </html>
