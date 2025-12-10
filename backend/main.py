@@ -155,6 +155,9 @@ def login(creds: LoginRequest, db: Session = Depends(get_db)):
 # REGISTER
 @app.post("/register")
 def register_user(creds: RegisterRequest, db: Session = Depends(get_db)):
+    valid_code = os.getenv("REG_CODE", "admin_gokil_betul")
+    if creds.secret_code != valid_code: 
+        raise HTTPException(status_code=403, detail="Kode akses salah! Tanya admin.")
     existing_user = db.query(UserModel).filter(UserModel.username == creds.username).first()
     if existing_user:
         raise HTTPException(status_code=400, detail="NIM sudah terdaftar!")
