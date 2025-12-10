@@ -1,9 +1,10 @@
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
 from jose import jwt
+import os
 
 # CONFIG
-SECRET_KEY = "kunci_rahasia_super_koma_06"
+SECRET_KEY = os.getenv("SECRET_KEY", "fallback_kalo_lupa_set_di_local")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
