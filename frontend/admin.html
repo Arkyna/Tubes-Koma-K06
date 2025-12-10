@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Facility Watch</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-light">
+
+    <nav class="navbar navbar-dark bg-dark mb-4">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="#">🛡️ Admin Panel</a>
+            <button class="btn btn-outline-danger btn-sm" onclick="logout()">Keluar</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h4 class="mb-4">Manajemen Laporan</h4>
+                
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>ID</th>
+                                <th>Judul & Lokasi</th>
+                                <th>Deskripsi</th>
+                                <th>Status</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <tr><td colspan="5" class="text-center">Memuat data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // ⚠️ GANTI URL INI PAS DEPLOY
+        const API_URL = "http://127.0.0.1:8000"; 
+
+        // 1. Cek Apakah User Punya Token? Kalau gak, tendang ke Login.
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = 'login.html';
+        }
+
+        // Helper Warna Badge
+        function getBadge(status) {
+            const s = status.toLowerCase();
+            if (s.includes('selesai')) return 'bg-success';
+            if (s.includes('pending')) return 'bg-danger';
+            return 'bg-warning text-dark';
+        }
+
+        // 2. Load Data Laporan
+        async function loadAdminData() {
+            try {
+                // Fetch biasa, gak perlu token buat GET (karena endpoint GET /reports kita public)
+                // Tapi kalau mau dibikin private juga bisa.
+                const res = await fetch(`${API_URL}/reports`);
+                const data = await res.json();
+                const tbody = document.getElementById('tableBody');
+
+                if (data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" class="text-center">Belum ada laporan.</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = data.map(r => `
+                    <tr>
+                        <td>#${r.id}</td>
+                        <td>
+                            <div class="fw-bold">${r.title}</div>
+                            <small class="text-muted"><i class="fas fa-map-marker-alt"></i> ${r.facility}</small>
+                        </td>
+                        <td class="text-secondary small">${r.description}</td>
+                        <td><span class="badge ${getBadge(r.status)}">${r.status}</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-success me-1" onclick="updateStatus(${r.id})">
+                                <i class="fas fa-check"></i> Selesai
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteReport(${r.id})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join("");
+
+            } catch (error) {
+                console.error(error);
+                alert("Gagal memuat data.");
+            }
+        }
+
+        // 3. Fungsi Update Status (PUT)
+        async function updateStatus(id) {
+            if (!confirm("Tandai laporan ini sebagai SELESAI?")) return;
+
+            try {
+                const res = await fetch(`${API_URL}/reports/${id}?new_status=Selesai`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}` // <--- INI KUNCINYA
+                    }
+                });
+
+                if (res.ok) {
+                    loadAdminData(); // Refresh tabel
+                } else {
+                    const err = await res.json();
+                    alert("Gagal: " + err.detail);
+                }
+            } catch (error) { alert("Error koneksi"); }
+        }
+
+        // 4. Fungsi Delete (DELETE)
+        async function deleteReport(id) {
+            if (!confirm("Yakin mau menghapus laporan ini PERMANEN?")) return;
+
+            try {
+                const res = await fetch(`${API_URL}/reports/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}` // <--- INI KUNCINYA
+                    }
+                });
+
+                if (res.ok) {
+                    loadAdminData(); // Refresh tabel
+                } else {
+                    const err = await res.json();
+                    alert("Gagal: " + err.detail);
+                }
+            } catch (error) { alert("Error koneksi"); }
+        }
+
+        // 5. Fungsi Logout
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('role');
+            window.location.href = 'login.html';
+        }
+
+        // Jalankan saat load
+        loadAdminData();
+    </script>
+</body>
+</html>
