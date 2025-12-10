@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
+
 <body class="bg-light">
 
     <nav class="navbar navbar-dark bg-dark mb-4">
@@ -20,7 +22,7 @@
         <div class="card border-0 shadow-sm">
             <div class="card-body">
                 <h4 class="mb-4">Manajemen Laporan</h4>
-                
+
                 <div class="table-responsive">
                     <table class="table table-hover align-middle">
                         <thead class="table-light">
@@ -33,7 +35,9 @@
                             </tr>
                         </thead>
                         <tbody id="tableBody">
-                            <tr><td colspan="5" class="text-center">Memuat data...</td></tr>
+                            <tr>
+                                <td colspan="5" class="text-center">Memuat data...</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -44,7 +48,20 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // ⚠️ GANTI URL INI PAS DEPLOY
-        const API_URL = "http://127.0.0.1:8000"; 
+        // === LOGIC AUTO-SWITCH URL ===
+        let API_URL = "";
+
+        // Cek apakah browser dibuka di Localhost?
+        if (window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost") {
+            // Kalo iya, tembak ke Backend Lokal
+            API_URL = "http://127.0.0.1:8000";
+            console.log("🔧 Running in Development Mode");
+        } else {
+            // Kalo enggak (berarti di Cloud), tembak ke Backend Cloud Run
+            // MASUKKAN URL CLOUD RUN LU DI SINI (Tanpa slash di akhir)
+            API_URL = "https://backend-service-255243454378.asia-southeast2.run.app";
+            console.log("☁️ Running in Production Mode");
+        }
 
         // 1. Cek Apakah User Punya Token? Kalau gak, tendang ke Login.
         const token = localStorage.getItem('token');
@@ -153,4 +170,5 @@
         loadAdminData();
     </script>
 </body>
+
 </html>

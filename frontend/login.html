@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,12 +14,14 @@
             align-items: center;
             justify-content: center;
         }
+
         .login-card {
             width: 100%;
             max-width: 400px;
             border-radius: 15px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
         }
+
         .btn-primary {
             background-color: #0d6efd;
             padding: 12px;
@@ -26,13 +29,14 @@
         }
     </style>
 </head>
+
 <body>
 
     <div class="card login-card border-0 p-4">
         <div class="card-body">
             <h3 class="text-center fw-bold text-primary mb-4">Facility Watch</h3>
             <p class="text-center text-muted mb-4">Silakan login untuk akses Admin</p>
-            
+
             <form id="loginForm">
                 <div class="mb-3">
                     <label class="form-label small fw-bold">USERNAME</label>
@@ -45,12 +49,16 @@
                 <div class="d-grid mt-4">
                     <button type="submit" class="btn btn-primary" id="loginBtn">MASUK</button>
                 </div>
+                <div class="text-center mt-3">
+                    <small>Belum punya akun? <a href="register.html" class="text-decoration-none">Daftar NIM
+                            Baru</a></small>
+                </div>
             </form>
 
             <div id="errorAlert" class="alert alert-danger mt-3 d-none text-center small">
                 Username atau Password salah!
             </div>
-            
+
             <div class="text-center mt-3">
                 <a href="index.html" class="text-decoration-none small text-muted">← Kembali ke Dashboard Tamu</a>
             </div>
@@ -59,11 +67,24 @@
 
     <script>
         // ⚠️ GANTI URL INI PAS DEPLOY
-        const API_URL = "http://127.0.0.1:8000"; 
+        // === LOGIC AUTO-SWITCH URL ===
+        let API_URL = "";
 
-        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        // Cek apakah browser dibuka di Localhost?
+        if (window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost") {
+            // Kalo iya, tembak ke Backend Lokal
+            API_URL = "http://127.0.0.1:8000";
+            console.log("🔧 Running in Development Mode");
+        } else {
+            // Kalo enggak (berarti di Cloud), tembak ke Backend Cloud Run
+            // MASUKKAN URL CLOUD RUN LU DI SINI (Tanpa slash di akhir)
+            API_URL = "https://backend-service-255243454378.asia-southeast2.run.app";
+            console.log("☁️ Running in Production Mode");
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async function (e) {
             e.preventDefault();
-            
+
             const usernameInput = document.getElementById('username').value;
             const passwordInput = document.getElementById('password').value;
             const errorAlert = document.getElementById('errorAlert');
@@ -88,12 +109,12 @@
                     // Simpan token sakti ini di brankas browser (localStorage)
                     localStorage.setItem('token', data.access_token);
                     localStorage.setItem('role', data.role);
-                    
+
                     alert("Login Berhasil! Mengalihkan...");
-                    
+
                     // Redirect ke halaman Admin (Next Step kita)
                     // Untuk sementara kita lempar ke index dulu biar keliatan efeknya
-                    window.location.href = "admin.html"; 
+                    window.location.href = "admin.html";
                 } else {
                     // Login Gagal
                     errorAlert.innerText = data.detail || "Login Gagal";
@@ -111,4 +132,5 @@
         });
     </script>
 </body>
+
 </html>
