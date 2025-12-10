@@ -9,7 +9,7 @@ import os
 # Import dari file-file yang udah kita pecah
 from database import engine, get_db, Base
 from models import ReportModel, UserModel
-from schemas import ReportCreate, LoginRequest
+from schemas import ReportCreate, LoginRequest, RegisterRequest
 from auth import get_password_hash, verify_password, create_access_token
 
 # Init App
@@ -154,3 +154,24 @@ def get_report_detail(report_id: int, db: Session = Depends(get_db)):
 def get_my_reports(db: Session = Depends(get_db), user: dict = Depends(get_current_user)):
     
     return db.query(ReportModel).filter(ReportModel.username == user['username']).order_by(ReportModel.id.desc()).all()
+
+# Jangan lupa import RegisterRequest (atau definisikan di atas)
+
+@app.post("/register")
+def register_user(creds: RegisterRequest, db: Session = Depends(get_db)):
+    # 1. Cek apakah NIM sudah terdaftar?
+    existing_user = db.query(UserModel).filter(UserModel.username == creds.username).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="NIM sudah terdaftar!")
+    
+    # 2. Bikin User Baru (Role otomatis 'user' biasa, bukan admin)
+    new_user = UserModel(
+        username=creds.username,
+        password_hash=get_password_hash(creds.password),
+        role="user"
+    )
+    
+    db.add(new_user)
+    db.commit()
+    
+    return {"message": "Registrasi Berhasil! Silakan Login."}
