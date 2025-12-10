@@ -116,7 +116,20 @@
         // ⚠️ PENTING: Ganti URL ini kalau sudah deploy ke Cloud Run!
         // Kalau run di laptop pakai: "http://127.0.0.1:8000"
         // Kalau deploy ganti jadi: "https://backend-service-xxxx.run.app"
-        const API_URL = "http://127.0.0.1:8000";
+        // === LOGIC AUTO-SWITCH URL ===
+        let API_URL = "";
+
+        // Cek apakah browser dibuka di Localhost?
+        if (window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost") {
+            // Kalo iya, tembak ke Backend Lokal
+            API_URL = "http://127.0.0.1:8000";
+            console.log("🔧 Running in Development Mode");
+        } else {
+            // Kalo enggak (berarti di Cloud), tembak ke Backend Cloud Run
+            // MASUKKAN URL CLOUD RUN LU DI SINI (Tanpa slash di akhir)
+            API_URL = "https://backend-service-255243454378.asia-southeast2.run.app";
+            console.log("☁️ Running in Production Mode");
+        }
 
         function getBadge(status) {
             const s = status.toLowerCase();
