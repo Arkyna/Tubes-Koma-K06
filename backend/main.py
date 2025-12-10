@@ -2,6 +2,9 @@ from fastapi import FastAPI, Depends, HTTPException, status, Header
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from jose import jwt, JWTError
+from fastapi.encoders import jsonable_encoder
+import redis
+import json
 import os
 
 # Import modules
@@ -25,6 +28,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Setup Redis Connection
+redis_host = os.getenv("REDIS_HOST", "localhost")
+redis_port = os.getenv("REDIS_PORT", "6379")
+
+try:
+    cache = redis.Redis(host=redis_host, port=int(redis_port), db=0, decode_responses=True)
+except Exception as e:
+    print(f"⚠️ Warning: Redis connection failed: {e}")
+    cache = None
 # === UTILS ===
 
 def create_default_admin():
@@ -69,17 +81,32 @@ def root():
     return {"message": "Modular Backend Ready!", "mode": "Cloud" if os.getenv("DB_USER") else "Local"}
 
 # GET ALL REPORTS (Public)
-# Tambah parameter opsional 'sort_by'
 @app.get("/reports")
 def get_reports(sort_by: str = "newest", db: Session = Depends(get_db)):
+    # 1. Cek Redis dulu (Key unik berdasarkan sort)
+    cache_key = f"reports:{sort_by}"
+    
+    if cache: # Kalau Redis hidup
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            print("🚀 HIT: Data from Redis Cache")
+            return json.loads(cached_data)
+    
+    # 2. Kalau gak ada di Redis, ambil dari SQL (Lambat)
+    print("🐌 MISS: Fetching from SQL")
     query = db.query(ReportModel)
     
     if sort_by == "likes":
-        # Urutkan berdasarkan Likes terbanyak
-        return query.order_by(ReportModel.likes.desc()).all()
+        reports = query.order_by(ReportModel.likes.desc()).all()
     else:
-        # Default: Urutkan berdasarkan ID (Terbaru)
-        return query.order_by(ReportModel.id.desc()).all()
+        reports = query.order_by(ReportModel.id.desc()).all()
+        
+    # 3. Simpan ke Redis (Expire dalam 60 detik biar data update)
+    if cache:
+        # jsonable_encoder mengubah objek SQLAlchemy jadi JSON murni
+        cache.set(cache_key, json.dumps(jsonable_encoder(reports)), ex=60)
+        
+    return reports
 
 # CREATE REPORT (Wajib Login)
 @app.post("/reports")
@@ -99,6 +126,10 @@ def create_report(
     db.add(new_report)
     db.commit()
     db.refresh(new_report)
+    if cache:
+        # Hapus semua cache laporan biar di-refresh
+        cache.delete("reports:newest")
+        cache.delete("reports:likes")
     return {"message": "Success", "data": new_report}
 
 # LOGIN
@@ -159,6 +190,10 @@ def upvote_report(report_id: int, db: Session = Depends(get_db)):
     
     report.likes += 1
     db.commit()
+    if cache:
+        # Hapus semua cache laporan biar di-refresh
+        cache.delete("reports:newest")
+        cache.delete("reports:likes")
     return {"message": "Upvoted!", "likes": report.likes}
 
 # ADMIN: UPDATE STATUS
