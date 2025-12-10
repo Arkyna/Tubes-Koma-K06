@@ -10,6 +10,7 @@ class ReportModel(Base):
     status = Column(String(20), default="Pending")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     username = Column(String(50), nullable=True)
+    likes = Column(Integer, default=0)
 
 class UserModel(Base):
     __tablename__ = "users"
