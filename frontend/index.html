@@ -215,34 +215,55 @@ container.innerHTML = data.map(r => {
         }
 
         // === 4. FITUR UPVOTE ===
-async function upvote(id) {
-            // 1. Cek dulu: Udah pernah like belum?
+// === 4. FITUR UPVOTE (UPDATED SECURITY) ===
+        async function upvote(id) {
+            // 1. Cek Login Dulu (Karena Backend sekarang menolak Guest)
+            if (!token) {
+                alert("⚠️ Eits, Login dulu bos buat nge-like!");
+                window.location.href = "login.html";
+                return;
+            }
+
+            // 2. Cek LocalStorage (Biar gak spam klik)
             if (localStorage.getItem(`liked_${id}`)) {
                 alert("Eits, satu orang satu suara ya! 😉");
                 return;
             }
 
             try {
-                // Optimistic UI (Nambah duluan)
+                // Optimistic UI (Update angka duluan biar kerasa cepet)
                 const likeCount = document.getElementById(`likes-${id}`);
-                const btn = document.getElementById(`btn-like-${id}`); // Kita perlu kasih ID ke tombolnya
+                const btn = document.getElementById(`btn-like-${id}`);
                 
                 let current = parseInt(likeCount.innerText);
                 likeCount.innerText = current + 1;
 
-                // Matikan tombol biar visualnya jelas
+                // Ubah tampilan tombol jadi biru
                 btn.classList.remove('btn-light', 'text-primary');
-                btn.classList.add('btn-primary', 'text-white'); // Jadi biru solid
+                btn.classList.add('btn-primary', 'text-white');
                 btn.disabled = true;
 
-                // 2. Tandai di LocalStorage
+                // Tandai di LocalStorage
                 localStorage.setItem(`liked_${id}`, "sudah");
 
-                // Kirim ke Backend
-                await fetch(`${API_URL}/reports/${id}/upvote`, { method: 'POST' });
+                // 3. KIRIM REQUEST KE BACKEND (WAJIB BAWA TOKEN)
+                const res = await fetch(`${API_URL}/reports/${id}/upvote`, { 
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}` // <--- INI PENTING!
+                    }
+                });
+
+                if (!res.ok) {
+                    // Kalau backend nolak (misal token expired), balikin UI-nya
+                    alert("Gagal upvote: Sesi habis, silakan login lagi.");
+                    localStorage.removeItem(`liked_${id}`);
+                    window.location.reload();
+                }
                 
             } catch (e) {
-                alert("Gagal upvote");
+                console.error(e);
+                alert("Gagal upvote karena koneksi error.");
             }
         }
 
