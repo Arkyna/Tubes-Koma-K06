@@ -20,6 +20,13 @@ function initNavbar() {
         if(username && username !== 'undefined') {
             document.getElementById('username-display').innerText = username;
         }
+
+        // 👇 LOGIKA BARU: Cek Role Admin 👇
+        const role = localStorage.getItem('role'); // Pastikan saat login, role disimpan ya!
+        if (role === 'admin') {
+            const adminBtn = document.getElementById('btn-admin-panel');
+            if(adminBtn) adminBtn.classList.remove('d-none');
+        }
     }
 }
 
@@ -157,54 +164,39 @@ function setupEventListeners() {
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Mengirim...';
 
-        // Persiapan Upload Gambar (FormData)
-        // Kita ubah dari JSON ke FormData biar support file upload nanti
+        // === KUNCI SUKSES UPLOAD ===
+        // Selalu pakai FormData agar Backend FastAPI (Form) bisa baca.
         const formData = new FormData();
         formData.append('title', document.getElementById('inputTitle').value);
         formData.append('facility', document.getElementById('inputFacility').value);
         formData.append('description', document.getElementById('inputDesc').value);
         
-        // Ambil file jika ada (Nanti pasang input file di HTML)
+        // Ambil file (Kalau user gak pilih file, backend tetep terima FormData kok)
         const fileInput = document.getElementById('inputImage');
         if(fileInput && fileInput.files[0]) {
             formData.append('file', fileInput.files[0]);
         }
 
         try {
-            // NOTE: Kalau pakai FormData, JANGAN set Content-Type header manual
-            // Browser akan otomatis set multipart/form-data boundary
-            // Tapi karena backend kita sementara masih JSON, kita pakai logika IF dulu
-            
-            let res;
-            if (fileInput && fileInput.files[0]) {
-                // Future implementation for Image
-                 res = await fetch(`${CONFIG.API_URL}/reports`, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}` }, // No Content-Type for FormData
-                    body: formData
-                });
-            } else {
-                // Fallback ke JSON (Current implementation)
-                res = await fetch(`${CONFIG.API_URL}/reports`, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify(Object.fromEntries(formData))
-                });
-            }
+            // Fetch tanpa Content-Type header manual!
+            // Browser otomatis set 'multipart/form-data; boundary=...'
+            const res = await fetch(`${CONFIG.API_URL}/reports`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }, 
+                body: formData 
+            });
             
             if (res.ok) {
                 alert("Laporan berhasil dikirim!");
                 bootstrap.Modal.getInstance(document.getElementById('addReportModal')).hide();
                 document.getElementById('reportForm').reset();
-                loadReports();
+                loadReports(); // Refresh Feed
             } else {
                 const err = await res.json();
                 alert("Gagal: " + (err.detail || "Terjadi kesalahan"));
             }
         } catch (error) { 
+            console.error(error);
             alert("Error koneksi!"); 
         } finally {
             submitBtn.disabled = false;

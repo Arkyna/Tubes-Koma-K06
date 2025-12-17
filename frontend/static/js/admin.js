@@ -1,115 +1,145 @@
-// Cek Otoritas (Admin Only)
+// === SECURITY CHECK ===
 const authToken = localStorage.getItem("token");
 const authRole = localStorage.getItem("role");
 
 if (!authToken || authRole !== "admin") {
-    alert("⛔ Akses Ditolak: Halaman ini khusus Admin!");
-    window.location.href = "index.html";
+    alert("⛔ Akses Ditolak: Area Terlarang!");
+    window.location.href = "login.html";
 }
 
+// === INIT ===
 document.addEventListener('DOMContentLoaded', () => {
     loadAdminData();
-    // Auto refresh setiap 30 detik (Realtime-ish)
-    setInterval(loadAdminData, 30000);
+    setupModalListener();
 });
 
+// === 1. LOAD DATA ===
 async function loadAdminData(sortBy = 'newest') {
     const tbody = document.getElementById('tableBody');
-    // Show spinner
-    // tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4"><div class="spinner-border text-primary"></div></td></tr>`;
-
+    
     try {
         const res = await fetch(`${CONFIG.API_URL}/reports?sort_by=${sortBy}`);
         const data = await res.json();
 
-        // 1. UPDATE STATISTIK (Simple Counter)
-        updateStats(data);
+        if (data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center py-5 text-muted">Belum ada data.</td></tr>`;
+            return;
+        }
 
-        // 2. RENDER TABEL
-        renderTable(data, tbody);
+        tbody.innerHTML = data.map(r => `
+            <tr>
+                <td class="px-4 fw-bold text-secondary">#${r.id}</td>
+                <td>
+                    <div class="fw-bold text-dark text-truncate" style="max-width: 200px;">${r.title}</div>
+                    <small class="text-muted"><i class="fas fa-map-marker-alt me-1"></i>${r.facility}</small>
+                    <div class="small text-primary fst-italic mt-1">${r.admin_note || '-'}</div>
+                </td>
+                <td>
+                    ${r.image_url ? 
+                        `<a href="${r.image_url}" target="_blank" class="btn btn-sm btn-outline-info"><i class="fas fa-image"></i> Lihat</a>` : 
+                        `<span class="text-muted small">-</span>`}
+                </td>
+                <td>${getPriorityBadge(r.priority)}</td>
+                <td>${getStatusBadge(r.status)}</td>
+                <td><i class="fas fa-thumbs-up text-primary"></i> ${r.likes || 0}</td>
+                <td class="text-end px-4">
+                    <button class="btn btn-sm btn-light border me-1" onclick="openEditModal(${r.id}, '${r.status}', '${r.priority}', '${r.admin_note || ''}')">
+                        <i class="fas fa-edit text-primary"></i>
+                    </button>
+                    <button class="btn btn-sm btn-light border" onclick="deleteReport(${r.id})">
+                        <i class="fas fa-trash text-danger"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join("");
 
     } catch (error) {
         console.error(error);
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger"><i class="fas fa-exclamation-triangle"></i> Gagal memuat data.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Gagal memuat data.</td></tr>`;
     }
 }
 
-function updateStats(data) {
-    const total = data.length;
-    const pending = data.filter(r => r.status.toLowerCase().includes('pending')).length;
-    const done = data.filter(r => r.status.toLowerCase().includes('selesai')).length;
-
-    document.getElementById('stat-total').innerText = total;
-    document.getElementById('stat-pending').innerText = pending;
-    document.getElementById('stat-done').innerText = done;
+// === 2. HELPER BADGES ===
+function getStatusBadge(status) {
+    const s = status || 'Pending';
+    let color = 'bg-secondary';
+    if(s === 'Selesai') color = 'bg-success';
+    if(s === 'Proses') color = 'bg-warning text-dark';
+    if(s === 'Ditolak') color = 'bg-danger';
+    return `<span class="badge ${color} rounded-pill">${s}</span>`;
 }
 
-function renderTable(data, tbody) {
-    if (data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-5 text-muted">Belum ada laporan masuk.</td></tr>`;
-        return;
-    }
-
-    tbody.innerHTML = data.map(r => `
-        <tr>
-            <td class="fw-bold text-secondary">#${r.id}</td>
-            <td>
-                <div class="fw-bold text-dark">${r.title}</div>
-                <small class="text-muted"><i class="fas fa-user-circle"></i> ${r.username || 'Anonim'}</small>
-            </td>
-            <td>
-                <span class="badge bg-light text-dark border"><i class="fas fa-map-marker-alt text-primary"></i> ${r.facility}</span>
-            </td>
-            <td>
-                <span class="badge ${getBadgeColor(r.status)} rounded-pill">${r.status}</span>
-            </td>
-            <td><i class="fas fa-thumbs-up text-primary"></i> ${r.likes || 0}</td>
-            <td>
-                <div class="btn-group">
-                    <button class="btn btn-sm btn-outline-success table-action-btn" onclick="updateStatus(${r.id})" title="Tandai Selesai">
-                        <i class="fas fa-check"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger table-action-btn" onclick="deleteReport(${r.id})" title="Hapus Laporan">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                     <a href="detail.html?id=${r.id}" class="btn btn-sm btn-outline-primary table-action-btn" title="Lihat Detail">
-                        <i class="fas fa-eye"></i>
-                    </a>
-                </div>
-            </td>
-        </tr>
-    `).join("");
+function getPriorityBadge(prio) {
+    const p = prio || 'Medium';
+    let color = 'bg-info text-dark'; // Medium
+    if(p === 'Low') color = 'bg-success';
+    if(p === 'High') color = 'bg-warning text-dark';
+    if(p === 'Critical') color = 'bg-danger animate-pulse'; // Efek kedip dikit (opsional di css)
+    return `<span class="badge ${color} fw-bold">${p}</span>`;
 }
 
-function getBadgeColor(status) {
-    const s = status.toLowerCase();
-    if (s.includes('selesai')) return 'bg-success';
-    if (s.includes('pending')) return 'bg-danger';
-    return 'bg-warning text-dark';
+// === 3. MODAL & EDIT LOGIC ===
+let editModalInstance = null;
+
+function openEditModal(id, status, priority, note) {
+    // Isi form dengan data yang ada
+    document.getElementById('edit-id').value = id;
+    document.getElementById('edit-status').value = status;
+    document.getElementById('edit-priority').value = priority || 'Medium';
+    document.getElementById('edit-note').value = note;
+    
+    document.getElementById('modal-id').innerText = id;
+
+    // Show Modal
+    const modalEl = document.getElementById('editModal');
+    editModalInstance = new bootstrap.Modal(modalEl);
+    editModalInstance.show();
 }
 
-// === ACTIONS ===
-async function updateStatus(id) {
-    if (!confirm("Tandai laporan ini sebagai SELESAI?")) return;
-    try {
-        const res = await fetch(`${CONFIG.API_URL}/reports/${id}?new_status=Selesai`, {
-            method: 'PUT',
-            headers: { 'Authorization': `Bearer ${authToken}` }
-        });
-        if (res.ok) loadAdminData();
-        else alert("Gagal update status");
-    } catch (e) { alert("Error koneksi"); }
+function setupModalListener() {
+    document.getElementById('editForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const id = document.getElementById('edit-id').value;
+        const payload = {
+            status: document.getElementById('edit-status').value,
+            priority: document.getElementById('edit-priority').value,
+            admin_note: document.getElementById('edit-note').value
+        };
+
+        try {
+            const res = await fetch(`${CONFIG.API_URL}/reports/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify(payload) // Kirim JSON Body (Sesuai backend baru)
+            });
+
+            if (res.ok) {
+                alert("Data berhasil diupdate!");
+                editModalInstance.hide();
+                loadAdminData(); // Refresh tabel
+            } else {
+                const err = await res.json();
+                alert("Gagal: " + (err.detail || 'Error server'));
+            }
+        } catch (error) {
+            alert("Error koneksi!");
+        }
+    });
 }
 
+// === 4. DELETE LOGIC ===
 async function deleteReport(id) {
-    if (!confirm("⚠️ PERINGATAN: Laporan akan dihapus permanen!")) return;
+    if (!confirm("⚠️ Yakin hapus permanen?")) return;
     try {
         const res = await fetch(`${CONFIG.API_URL}/reports/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
         if (res.ok) loadAdminData();
-        else alert("Gagal menghapus laporan");
     } catch (e) { alert("Error koneksi"); }
 }
 

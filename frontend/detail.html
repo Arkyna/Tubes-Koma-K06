@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -29,43 +30,65 @@
                     </div>
 
                     <div class="card-body p-4">
-                        <h2 class="fw-bold text-dark mb-3" id="d-title">Memuat data...</h2>
-                        <div class="d-flex gap-4 mb-4 text-muted small text-uppercase fw-bold">
-                            <div><i class="fas fa-map-marker-alt me-2 text-primary"></i><span id="d-facility">-</span></div>
-                            <div><i class="far fa-clock me-2 text-primary"></i><span id="d-time">-</span></div>
-                        </div>
-
-                        <div id="image-container" class="d-none text-center mb-4">
-                            <img id="d-image" src="" alt="Bukti Laporan" class="evidence-img">
-                        </div>
-
-                        <hr class="my-4">
-
-                        <h6 class="fw-bold text-uppercase text-muted small mb-2">Deskripsi Masalah</h6>
-                        <p class="fs-5 text-secondary lh-base" id="d-desc">...</p>
-
-                        <div class="mt-5 p-4 bg-light rounded-3 border">
-                            <h6 class="fw-bold text-uppercase text-muted small mb-4 text-center">Status Pengerjaan</h6>
-                            
-                            <div class="timeline-container">
-                                <div class="progress" style="height: 4px;">
-                                    <div id="progress-bar" class="progress-bar bg-secondary" role="progressbar" style="width: 0%"></div>
-                                </div>
-                                
-                                <div class="position-absolute top-0 start-0 translate-middle timeline-step btn btn-sm btn-primary rounded-circle shadow-sm">1</div>
-                                
-                                <div class="position-absolute top-0 start-50 translate-middle timeline-step btn btn-sm btn-secondary rounded-circle shadow-sm" id="step-2">2</div>
-                                
-                                <div class="position-absolute top-0 start-100 translate-middle timeline-step btn btn-sm btn-secondary rounded-circle shadow-sm" id="step-3">3</div>
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <span id="badge-status"
+                                    class="badge bg-secondary rounded-pill px-3 py-2">Loading...</span>
+                                <span id="d-priority"></span>
                             </div>
+                            <small class="text-muted fw-bold">
+                                <i class="far fa-clock me-1"></i> <span id="d-time">-</span>
+                            </small>
+                        </div>
 
-                            <div class="d-flex justify-content-between mt-3 small fw-bold text-muted">
-                                <span>Diterima</span>
-                                <span class="text-center ms-2">Dikerjakan</span>
-                                <span>Selesai</span>
+                        <h3 id="d-title" class="fw-bold text-dark mb-1">...</h3>
+                        <p class="text-primary mb-3"><i class="fas fa-map-marker-alt me-2"></i><span
+                                id="d-facility">...</span></p>
+
+                        <div id="image-container" class="mb-4 d-none">
+                            <img id="d-image" src="" class="img-fluid rounded-3 shadow-sm w-100" alt="Bukti Laporan"
+                                style="max-height: 400px; object-fit: cover;">
+                        </div>
+
+                        <div class="bg-light p-3 rounded-3 mb-4 border">
+                            <h6 class="fw-bold text-secondary small">DESKRIPSI</h6>
+                            <p id="d-desc" class="mb-0 text-dark" style="white-space: pre-line;">...</p>
+                        </div>
+
+                        <div id="d-admin-note"
+                            class="d-none alert alert-warning border-warning d-flex align-items-start">
+                            <i class="fas fa-info-circle mt-1 me-3 fs-5"></i>
+                            <div>
+                                <strong class="d-block mb-1 text-uppercase small">Catatan Petugas:</strong>
+                                <span id="note-text" class="fst-italic">...</span>
                             </div>
                         </div>
 
+                        <h6 class="fw-bold small text-muted mb-3 mt-5 text-center text-uppercase">Timeline Pengerjaan
+                        </h6>
+                        <div class="position-relative m-4">
+                            <div class="progress" style="height: 2px;">
+                                <div id="progress-bar" class="progress-bar" role="progressbar" style="width: 0%;"></div>
+                            </div>
+
+                            <div class="position-absolute top-0 start-0 translate-middle btn btn-sm btn-primary rounded-pill"
+                                style="width: 2rem; height:2rem;">1</div>
+                            <div id="step-2"
+                                class="position-absolute top-0 start-50 translate-middle btn btn-sm btn-secondary rounded-pill"
+                                style="width: 2rem; height:2rem;">2</div>
+                            <div id="step-3"
+                                class="position-absolute top-0 start-100 translate-middle btn btn-sm btn-secondary rounded-pill"
+                                style="width: 2rem; height:2rem;">3</div>
+                        </div>
+                        <div class="d-flex justify-content-between small text-muted mt-2 fw-bold">
+                            <span>Terkirim</span>
+                            <span>Proses</span>
+                            <span>Selesai</span>
+                        </div>
+
+                        <div class="d-grid mt-5">
+                            <a href="index.html" class="btn btn-outline-secondary">Kembali ke Dashboard</a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -75,4 +98,5 @@
     <script src="static/js/config.js"></script>
     <script src="static/js/detail.js"></script>
 </body>
+
 </html>

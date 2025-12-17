@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="static/css/style.css">
 </head>
+
 <body>
 
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top shadow-sm">
@@ -18,9 +20,14 @@
                     <a href="login.html" class="btn btn-light btn-sm fw-bold text-primary px-3">Masuk</a>
                     <a href="register.html" class="btn btn-outline-light btn-sm px-3">Daftar</a>
                 </div>
-                <div id="user-nav" class="d-none d-flex align-items-center gap-3">
-                    <span class="text-white small d-none d-md-block">Halo, <b id="username-display">User</b></span>
-                    <button onclick="logout()" class="btn btn-danger btn-sm rounded-circle" title="Keluar"><i class="fas fa-sign-out-alt"></i></button>
+                <div id="user-nav" class="d-none d-flex align-items-center gap-2">
+                    <a id="btn-admin-panel" href="admin.html" class="d-none btn btn-warning btn-sm fw-bold">
+                        <i class="fas fa-user-shield me-1"></i> Panel Admin
+                    </a>
+                    <span class="text-white small d-none d-md-block ms-2">Halo, <b id="username-display">User</b></span>
+                    <button onclick="logout()" class="btn btn-danger btn-sm rounded-circle shadow-sm" title="Keluar">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
                 </div>
             </div>
         </div>
@@ -32,15 +39,15 @@
                 <h4 class="fw-bold text-secondary mb-0">Laporan Terkini</h4>
                 <small class="text-muted">Pantau kondisi fasilitas kampus secara real-time</small>
             </div>
-            
+
             <div class="btn-group d-none" id="filter-tabs">
                 <button class="btn btn-outline-primary active" onclick="switchTab('all')">Semua</button>
                 <button class="btn btn-outline-primary" onclick="switchTab('mine')">Punya Saya</button>
             </div>
         </div>
-        
+
         <div id="reports" class="row g-4">
-            </div>
+        </div>
     </div>
 
     <div class="fab" onclick="checkAuthAndOpenModal()" title="Buat Laporan">
@@ -58,9 +65,10 @@
                     <form id="reportForm">
                         <div class="mb-3">
                             <label class="form-label fw-bold small text-secondary">JUDUL LAPORAN</label>
-                            <input type="text" id="inputTitle" class="form-control" placeholder="Contoh: AC Bocor di R.201" required minlength="5">
+                            <input type="text" id="inputTitle" class="form-control"
+                                placeholder="Contoh: AC Bocor di R.201" required minlength="5">
                         </div>
-                        
+
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-bold small text-secondary">LOKASI</label>
@@ -83,9 +91,10 @@
 
                         <div class="mb-3">
                             <label class="form-label fw-bold small text-secondary">DESKRIPSI KERUSAKAN</label>
-                            <textarea id="inputDesc" class="form-control" rows="3" placeholder="Jelaskan detail kerusakan..." required minlength="10"></textarea>
+                            <textarea id="inputDesc" class="form-control" rows="3"
+                                placeholder="Jelaskan detail kerusakan..." required minlength="10"></textarea>
                         </div>
-                        
+
                         <div class="mb-3 d-none" id="recaptcha-container">
                             <div class="g-recaptcha" data-sitekey="YOUR_SITE_KEY"></div>
                         </div>
@@ -103,4 +112,5 @@
     <script src="static/js/config.js"></script>
     <script src="static/js/app.js"></script>
 </body>
+
 </html>
