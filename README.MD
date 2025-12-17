@@ -31,14 +31,14 @@ Aplikasi menggunakan pendekatan **Hybrid Serverless** dengan isolasi jaringan un
 
 ### **2. Application Layer (Backend)**
 - **Service:** Cloud Run (FastAPI Python).
-- [cite_start]**Performance:** Menggunakan **Redis Caching** (Cache-Aside Pattern) untuk mempercepat load data[cite: 63].
+- **Performance:** Menggunakan **Redis Caching** (Cache-Aside Pattern) untuk mempercepat load data[cite: 63].
 - **Resiliency:** Fitur **Fail-Safe**; jika Redis down, sistem otomatis fallback ke Database.
 - **Connectivity:** Menggunakan **Serverless VPC Access Connector** untuk komunikasi privat ke Data Layer.
 
 ### **3. Data Layer (Private Network)**
 - **Database:** Cloud SQL (PostgreSQL 14) - *Private IP Only*.
 - **Cache:** Memorystore for Redis - *Private IP Only*.
-- [cite_start]**Security:** Kredensial database dienkripsi dan dikelola via **GCP Secret Manager**.
+- **Security:** Kredensial database dienkripsi dan dikelola via **GCP Secret Manager**.
 
 ---
 ## **Topologi Arsitektur**
@@ -51,9 +51,9 @@ Aplikasi menggunakan pendekatan **Hybrid Serverless** dengan isolasi jaringan un
 
 * **⚡ High Performance:** Response time API dioptimalkan dengan in-memory caching (Redis).
 * **🔒 Enhanced Security:**
-    * [cite_start]**Network Isolation:** Database tidak memiliki IP Publik, mencegah serangan brute-force dari internet.
-    * [cite_start]**Secret Management:** Tidak ada kredensial sensitif (password DB) yang di-hardcode dalam source code.
-* [cite_start]**🤖 CI/CD Automation:** Pipeline deployment otomatis menggunakan Google Cloud Build setiap kali ada push ke repository.
+    * **Network Isolation:** Database tidak memiliki IP Publik, mencegah serangan brute-force dari internet.
+    * **Secret Management:** Tidak ada kredensial sensitif (password DB) yang di-hardcode dalam source code.
+* **🤖 CI/CD Automation:** Pipeline deployment otomatis menggunakan Google Cloud Build setiap kali ada push ke repository.
 
 ---
 ## **Configuration & Environment Variables**
