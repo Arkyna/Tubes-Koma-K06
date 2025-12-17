@@ -1,120 +1,54 @@
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Daftar Akun - Facility Watch</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            background-color: #f4f6f9;
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .login-card {
-            width: 100%;
-            max-width: 400px;
-            border-radius: 15px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-        }
-    </style>
+    <link rel="stylesheet" href="static/css/style.css">
 </head>
 
-<body>
+<body class="auth-page">
 
-    <div class="card login-card border-0 p-4">
+    <div class="card login-card p-4">
         <div class="card-body">
-            <h4 class="text-center fw-bold text-primary mb-2">Daftar Akun</h4>
-            <p class="text-center text-muted mb-4 small">Gunakan NIM untuk registrasi</p>
+            <div class="text-center mb-4">
+                <h4 class="fw-bold text-primary mb-2"><i class="fas fa-user-plus me-2"></i>Daftar Akun</h4>
+                <p class="text-muted small">Gunakan NIM Mahasiswa untuk registrasi</p>
+            </div>
 
             <form id="registerForm">
                 <div class="mb-3">
-                    <label class="form-label small fw-bold">NIM (Username)</label>
-                    <input type="text" id="username" class="form-control" required placeholder="Contoh: 120140001"
-                        pattern="[0-9]+" title="Hanya boleh angka">
+                    <label class="form-label small fw-bold text-secondary">NIM (USERNAME)</label>
+                    <input type="text" id="username" class="form-control" required placeholder="Contoh: 121140001" pattern="[0-9]+" title="Hanya boleh angka">
                 </div>
+                
                 <div class="mb-3">
-                    <label class="form-label small fw-bold">PASSWORD</label>
-                    <input type="password" id="password" class="form-control" required minlength="6"
-                        placeholder="Minimal 6 karakter">
+                    <label class="form-label small fw-bold text-secondary">PASSWORD</label>
+                    <input type="password" id="password" class="form-control" required minlength="6" placeholder="Minimal 6 karakter">
                 </div>
+                
                 <div class="mb-3">
-                    <label class="form-label small fw-bold text-danger">KODE AKSES KELAS (Wajib)</label>
-                    <input type="text" id="secret_code" class="form-control" required
-                        placeholder="Tanya ketua kelompok...">
+                    <label class="form-label small fw-bold text-danger">KODE AKSES KELAS <i class="fas fa-lock ms-1"></i></label>
+                    <input type="text" id="secret_code" class="form-control border-danger" required placeholder="Masukkan kode rahasia...">
+                    <div class="form-text small text-danger">*Kode ini untuk validasi bahwa Anda mahasiswa.</div>
                 </div>
+                
                 <div class="d-grid mt-4">
-                    <button type="submit" class="btn btn-success fw-bold" id="regBtn">DAFTAR SEKARANG</button>
+                    <button type="submit" class="btn btn-success fw-bold py-2" id="regBtn">DAFTAR SEKARANG</button>
                 </div>
             </form>
 
-            <div id="alertBox" class="alert alert-danger mt-3 d-none text-center small"></div>
+            <div id="alertBox" class="alert mt-3 d-none text-center small border-0"></div>
 
-            <div class="text-center mt-3">
-                <small>Sudah punya akun? <a href="login.html" class="text-decoration-none fw-bold">Login di
-                        sini</a></small>
+            <div class="text-center mt-4 border-top pt-3">
+                <small class="text-muted">Sudah punya akun? <a href="login.html" class="text-decoration-none fw-bold">Login di sini</a></small>
             </div>
         </div>
     </div>
 
-    <script>
-        // === LOGIC AUTO-SWITCH URL ===
-        let API_URL = "";
-        if (window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost") {
-            API_URL = "http://127.0.0.1:8000";
-        } else {
-            API_URL = "https://backend-service-255243454378.asia-southeast2.run.app"; // Ganti URL Cloudmu
-        }
-
-        document.getElementById('registerForm').addEventListener('submit', async function (e) {
-            e.preventDefault();
-
-            const usernameInput = document.getElementById('username').value;
-            const passwordInput = document.getElementById('password').value;
-            const secretCodeInput = document.getElementById('secret_code').value;
-            const alertBox = document.getElementById('alertBox');
-            const btn = document.getElementById('regBtn');
-
-            btn.innerHTML = "Memproses...";
-            btn.disabled = true;
-            alertBox.classList.add('d-none');
-
-            try {
-                const res = await fetch(`${API_URL}/register`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        username: usernameInput,
-                        password: passwordInput,
-                        // 👇 2. Kirim secret_code di body JSON
-                        secret_code: secretCodeInput
-                    })
-                });
-
-                const data = await res.json();
-
-                if (res.ok) {
-                    alert("Registrasi Berhasil! Silakan Login.");
-                    window.location.href = "login.html"; // Lempar ke login setelah sukses
-                } else {
-                    alertBox.innerText = data.detail || "Registrasi Gagal";
-                    alertBox.classList.remove('d-none');
-                    alertBox.classList.replace('alert-success', 'alert-danger');
-                }
-
-            } catch (error) {
-                alertBox.innerText = "Error koneksi ke server";
-                alertBox.classList.remove('d-none');
-            } finally {
-                btn.innerHTML = "DAFTAR SEKARANG";
-                btn.disabled = false;
-            }
-        });
-    </script>
+    <script src="static/js/config.js"></script>
+    <script src="static/js/auth.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </body>
-
 </html>

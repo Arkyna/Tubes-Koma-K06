@@ -1,137 +1,53 @@
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Facility Watch</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            background-color: #f4f6f9;
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .login-card {
-            width: 100%;
-            max-width: 400px;
-            border-radius: 15px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-        }
-
-        .btn-primary {
-            background-color: #0d6efd;
-            padding: 12px;
-            font-weight: bold;
-        }
-    </style>
+    <link rel="stylesheet" href="static/css/style.css">
 </head>
 
-<body>
+<body class="auth-page">
 
-    <div class="card login-card border-0 p-4">
+    <div class="card login-card p-4">
         <div class="card-body">
-            <h3 class="text-center fw-bold text-primary mb-4">Facility Watch</h3>
-            <p class="text-center text-muted mb-4">Silakan login untuk akses laporan</p>
+            <div class="text-center mb-4">
+                <h3 class="fw-bold text-primary"><i class="fas fa-building me-2"></i>Facility Watch</h3>
+                <p class="text-muted small">Silakan login untuk akses laporan</p>
+            </div>
 
             <form id="loginForm">
                 <div class="mb-3">
-                    <label class="form-label small fw-bold">USERNAME</label>
-                    <input type="text" id="username" class="form-control" required placeholder="Username Anda">
+                    <label class="form-label small fw-bold text-secondary">USERNAME / NIM</label>
+                    <input type="text" id="username" class="form-control" required placeholder="Masukkan Username/NIM">
                 </div>
                 <div class="mb-3">
-                    <label class="form-label small fw-bold">PASSWORD</label>
-                    <input type="password" id="password" class="form-control" required placeholder="Password Anda">
+                    <label class="form-label small fw-bold text-secondary">PASSWORD</label>
+                    <input type="password" id="password" class="form-control" required placeholder="Masukkan Password">
                 </div>
+                
                 <div class="d-grid mt-4">
-                    <button type="submit" class="btn btn-primary" id="loginBtn">MASUK</button>
+                    <button type="submit" class="btn btn-primary fw-bold py-2" id="loginBtn">MASUK</button>
                 </div>
+                
                 <div class="text-center mt-3">
-                    <small>Belum punya akun? <a href="register.html" class="text-decoration-none">Daftar NIM
-                            Baru</a></small>
+                    <small class="text-muted">Belum punya akun? <a href="register.html" class="text-decoration-none fw-bold">Daftar Baru</a></small>
                 </div>
             </form>
 
-            <div id="errorAlert" class="alert alert-danger mt-3 d-none text-center small">
+            <div id="errorAlert" class="alert alert-danger mt-3 d-none text-center small border-0 bg-danger-subtle text-danger">
                 Username atau Password salah!
             </div>
 
-            <div class="text-center mt-3">
-                <a href="index.html" class="text-decoration-none small text-muted">← Kembali ke Dashboard Tamu</a>
+            <div class="text-center mt-4 border-top pt-3">
+                <a href="index.html" class="text-decoration-none small text-muted hover-underline">← Kembali ke Dashboard Tamu</a>
             </div>
         </div>
     </div>
 
-    <script>
-        // ⚠️ GANTI URL INI PAS DEPLOY
-        // === LOGIC AUTO-SWITCH URL ===
-        let API_URL = "";
-
-        // Cek apakah browser dibuka di Localhost?
-        if (window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost") {
-            API_URL = "http://127.0.0.1:8000";
-            console.log("🔧 Running in Development Mode");
-        } else {
-            API_URL = "https://backend-service-255243454378.asia-southeast2.run.app";
-            console.log("☁️ Running in Production Mode");
-        }
-
-        document.getElementById('loginForm').addEventListener('submit', async function (e) {
-            e.preventDefault();
-
-            const usernameInput = document.getElementById('username').value;
-            const passwordInput = document.getElementById('password').value;
-            const errorAlert = document.getElementById('errorAlert');
-            const btn = document.getElementById('loginBtn');
-
-            // Loading State
-            btn.innerHTML = "Memproses...";
-            btn.disabled = true;
-            errorAlert.classList.add('d-none');
-
-            try {
-                const res = await fetch(`${API_URL}/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: usernameInput, password: passwordInput })
-                });
-
-                const data = await res.json();
-
-                if (res.ok) {
-                    // === LOGIC PENYIMPANAN TOKEN & USERNAME ===
-                    localStorage.setItem('token', data.access_token);
-                    localStorage.setItem('role', data.role);
-                    
-                    localStorage.setItem('username', data.username || usernameInput); 
-
-                    alert("Login Berhasil! Mengalihkan...");
-
-                    if (data.role === 'admin') {
-                        window.location.href = "admin.html";
-                    } else {
-                        window.location.href = "index.html";
-                    }
-                } else {
-                    // (error handling)
-                    // Login Gagal
-                    errorAlert.innerText = data.detail || "Login Gagal";
-                    errorAlert.classList.remove('d-none');
-                }
-
-            } catch (error) {
-                console.error(error);
-                errorAlert.innerText = "Error koneksi ke server";
-                errorAlert.classList.remove('d-none');
-            } finally {
-                btn.innerHTML = "MASUK";
-                btn.disabled = false;
-            }
-        });
-    </script>
+    <script src="static/js/config.js"></script>
+    <script src="static/js/auth.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </body>
-
 </html>

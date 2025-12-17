@@ -1,198 +1,108 @@
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - Facility Watch</title>
-    <script>
-        const authToken = localStorage.getItem("token");
-        const authRole = localStorage.getItem("role");
-
-        if (!authToken || authRole !== "admin") {
-            alert("⛔ Eits! Anda bukan Admin. Dilarang masuk area terlarang!");
-            window.location.href = "index.html";
-        }
-    </script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-
+    <link rel="stylesheet" href="static/css/style.css">
 </head>
 
 <body class="bg-light">
 
-    <nav class="navbar navbar-dark bg-dark mb-4">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="#">🛡️ Admin Panel</a>
-            <button class="btn btn-outline-danger btn-sm" onclick="logout()">Keluar</button>
+    <nav class="navbar navbar-expand navbar-dark bg-dark sticky-top shadow-sm px-3">
+        <a class="navbar-brand fw-bold" href="#"><i class="fas fa-user-shield me-2"></i>Admin Panel</a>
+        <div class="ms-auto d-flex align-items-center">
+            <span class="text-white-50 small me-3 d-none d-md-block">Logged in as Administrator</span>
+            <button class="btn btn-outline-danger btn-sm" onclick="logout()">
+                <i class="fas fa-sign-out-alt me-1"></i> Keluar
+            </button>
         </div>
     </nav>
 
-    <div class="container">
-        <div class="card border-0 shadow-sm">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-
-                    <h4 class="mb-0 fw-bold text-dark">Manajemen Laporan</h4>
-
-                    <div class="btn-group">
-                        <button class="btn btn-outline-secondary btn-sm" onclick="loadAdminData('newest')">
-                            <i class="fas fa-clock me-1"></i> Terbaru
-                        </button>
-                        <button class="btn btn-outline-danger btn-sm" onclick="loadAdminData('likes')">
-                            <i class="fas fa-fire me-1"></i> Paling Viral
-                        </button>
+    <div class="container py-4">
+        
+        <div class="row mb-4 g-3">
+            <div class="col-md-4">
+                <div class="stat-card bg-gradient-primary shadow-sm">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase mb-1 opacity-75">Total Laporan</h6>
+                            <h2 class="mb-0 fw-bold" id="stat-total">0</h2>
+                        </div>
+                        <i class="fas fa-clipboard-list fa-2x opacity-50"></i>
                     </div>
-
                 </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card bg-gradient-danger shadow-sm">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase mb-1 opacity-75">Perlu Tindakan</h6>
+                            <h2 class="mb-0 fw-bold" id="stat-pending">0</h2>
+                        </div>
+                        <i class="fas fa-exclamation-circle fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card bg-gradient-success shadow-sm">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase mb-1 opacity-75">Selesai</h6>
+                            <h2 class="mb-0 fw-bold" id="stat-done">0</h2>
+                        </div>
+                        <i class="fas fa-check-circle fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
 
+        <div class="card border-0 shadow-sm rounded-3">
+            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-table me-2 text-primary"></i>Manajemen Data</h5>
+                
+                <div class="btn-group">
+                    <button class="btn btn-outline-secondary btn-sm" onclick="loadAdminData('newest')">
+                        <i class="fas fa-sort-amount-down me-1"></i> Terbaru
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="loadAdminData('likes')">
+                        <i class="fas fa-fire me-1"></i> Populer
+                    </button>
+                </div>
+            </div>
 
-
+            <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="table-light">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light text-secondary small text-uppercase">
                             <tr>
-                                <th>ID</th>
-                                <th>Judul & Lokasi</th>
-                                <th>Deskripsi</th>
+                                <th class="px-3">ID</th>
+                                <th>Laporan</th>
+                                <th>Lokasi</th>
                                 <th>Status</th>
+                                <th>Likes</th>
                                 <th>Aksi</th>
                             </tr>
                         </thead>
-                        <tbody id="tableBody">
+                        <tbody id="tableBody" class="border-top-0">
                             <tr>
-                                <td colspan="5" class="text-center">Memuat data...</td>
+                                <td colspan="6" class="text-center py-5">
+                                    <div class="spinner-border text-primary" role="status"></div>
+                                    <p class="text-muted small mt-2">Mengambil data...</p>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
+        
     </div>
 
+    <script src="static/js/config.js"></script>
+    <script src="static/js/admin.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-
-        // ⚠️ GANTI URL INI PAS DEPLOY
-        // === LOGIC AUTO-SWITCH URL ===
-        let API_URL = "";
-
-        // Cek apakah browser dibuka di Localhost?
-        if (window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost") {
-            // Kalo iya, tembak ke Backend Lokal
-            API_URL = "http://127.0.0.1:8000";
-            console.log("🔧 Running in Development Mode");
-        } else {
-            API_URL = "https://backend-service-255243454378.asia-southeast2.run.app";
-            console.log("☁️ Running in Production Mode");
-        }
-
-        // 1. Cek Apakah User Punya Token? Kalau gak, tendang ke Login.
-        const token = localStorage.getItem('token');
-        if (!token) {
-            window.location.href = 'login.html';
-        }
-
-        // Helper Warna Badge
-        function getBadge(status) {
-            const s = status.toLowerCase();
-            if (s.includes('selesai')) return 'bg-success';
-            if (s.includes('pending')) return 'bg-danger';
-            return 'bg-warning text-dark';
-        }
-
-        // 2. Load Data Laporan
-        async function loadAdminData(sortBy = 'newest') {
-            try {
-                const res = await fetch(`${API_URL}/reports?sort_by=${sortBy}`);
-                const data = await res.json();
-                const tbody = document.getElementById('tableBody');
-
-                if (data.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="5" class="text-center">Belum ada laporan.</td></tr>`;
-                    return;
-                }
-
-                tbody.innerHTML = data.map(r => `
-                    <tr>
-                        <td>#${r.id}</td>
-                        <td>
-                            <div class="fw-bold">${r.title}</div>
-                            <small class="text-muted"><i class="fas fa-map-marker-alt"></i> ${r.facility}</small>
-                        </td>
-                        <td class="text-secondary small">${r.description}</td>
-                        <td><span class="badge ${getBadge(r.status)}">${r.status}</span></td>
-                        <td>
-                            <button class="btn btn-sm btn-success me-1" onclick="updateStatus(${r.id})">
-                                <i class="fas fa-check"></i> Selesai
-                            </button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="deleteReport(${r.id})">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `).join("");
-
-            } catch (error) {
-                console.error(error);
-                alert("Gagal memuat data.");
-            }
-        }
-
-        // 3. Fungsi Update Status (PUT)
-        async function updateStatus(id) {
-            if (!confirm("Tandai laporan ini sebagai SELESAI?")) return;
-
-            try {
-                const res = await fetch(`${API_URL}/reports/${id}?new_status=Selesai`, {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `Bearer ${token}` // <--- INI KUNCINYA
-                    }
-                });
-
-                if (res.ok) {
-                    loadAdminData(); // Refresh tabel
-                } else {
-                    const err = await res.json();
-                    alert("Gagal: " + err.detail);
-                }
-            } catch (error) { alert("Error koneksi"); }
-        }
-
-        // 4. Fungsi Delete (DELETE)
-        async function deleteReport(id) {
-            if (!confirm("Yakin mau menghapus laporan ini PERMANEN?")) return;
-
-            try {
-                const res = await fetch(`${API_URL}/reports/${id}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Authorization': `Bearer ${token}` // <--- INI KUNCINYA
-                    }
-                });
-
-                if (res.ok) {
-                    loadAdminData(); // Refresh tabel
-                } else {
-                    const err = await res.json();
-                    alert("Gagal: " + err.detail);
-                }
-            } catch (error) { alert("Error koneksi"); }
-        }
-
-        // 5. Fungsi Logout
-        function logout() {
-            localStorage.removeItem('token');
-            localStorage.removeItem('role');
-            window.location.href = 'login.html';
-        }
-
-        // Jalankan saat load
-        loadAdminData();
-    </script>
 </body>
-
-
-
 </html>

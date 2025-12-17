@@ -3,38 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Facility Watch</title>
+    <title>Facility Watch - Kampus</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        body { background-color: #f4f6f9; padding-top: 5rem; } /* Padding buat Navbar Fixed */
-        .card { transition: transform 0.2s; cursor: default; }
-        .card:hover { transform: translateY(-5px); }
-        .fab {
-            position: fixed; bottom: 30px; right: 30px;
-            width: 60px; height: 60px; border-radius: 50%;
-            background-color: #0d6efd; color: white;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 24px; box-shadow: 0 4px 15px rgba(13, 110, 253, 0.4);
-            cursor: pointer; z-index: 1000;
-        }
-    </style>
+    <link rel="stylesheet" href="static/css/style.css">
 </head>
 <body>
 
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top shadow-sm">
         <div class="container">
             <a class="navbar-brand fw-bold" href="#"><i class="fas fa-building me-2"></i>FacilityWatch</a>
-            
             <div class="d-flex align-items-center gap-2">
                 <div id="guest-nav">
-                    <a href="login.html" class="btn btn-light btn-sm fw-bold text-primary">Masuk</a>
-                    <a href="register.html" class="btn btn-outline-light btn-sm">Daftar</a>
+                    <a href="login.html" class="btn btn-light btn-sm fw-bold text-primary px-3">Masuk</a>
+                    <a href="register.html" class="btn btn-outline-light btn-sm px-3">Daftar</a>
                 </div>
-
                 <div id="user-nav" class="d-none d-flex align-items-center gap-3">
-                    <span class="text-white small">Halo, <b id="username-display">User</b></span>
-                    <button onclick="logout()" class="btn btn-danger btn-sm"><i class="fas fa-sign-out-alt"></i></button>
+                    <span class="text-white small d-none d-md-block">Halo, <b id="username-display">User</b></span>
+                    <button onclick="logout()" class="btn btn-danger btn-sm rounded-circle" title="Keluar"><i class="fas fa-sign-out-alt"></i></button>
                 </div>
             </div>
         </div>
@@ -42,7 +28,10 @@
 
     <div class="container pb-5">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h4 class="fw-bold text-secondary">Laporan Terkini</h4>
+            <div>
+                <h4 class="fw-bold text-secondary mb-0">Laporan Terkini</h4>
+                <small class="text-muted">Pantau kondisi fasilitas kampus secara real-time</small>
+            </div>
             
             <div class="btn-group d-none" id="filter-tabs">
                 <button class="btn btn-outline-primary active" onclick="switchTab('all')">Semua</button>
@@ -51,46 +40,58 @@
         </div>
         
         <div id="reports" class="row g-4">
-            <div class="col-12 text-center mt-5">
-                <div class="spinner-border text-primary" role="status"></div>
-                <p>Memuat data...</p>
             </div>
-        </div>
     </div>
 
-    <div class="fab" onclick="checkAuthAndOpenModal()">
+    <div class="fab" onclick="checkAuthAndOpenModal()" title="Buat Laporan">
         <i class="fas fa-plus"></i>
     </div>
 
-    <div class="modal fade" id="addReportModal" tabindex="-1">
+    <div class="modal fade" id="addReportModal" tabindex="-1" data-bs-backdrop="static">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title">Buat Laporan Baru</h5>
+                    <h5 class="modal-title"><i class="fas fa-edit me-2"></i>Buat Laporan Baru</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <form id="reportForm">
                         <div class="mb-3">
-                            <label class="form-label fw-bold small">JUDUL</label>
-                            <input type="text" id="inputTitle" class="form-control" required minlength="5">
+                            <label class="form-label fw-bold small text-secondary">JUDUL LAPORAN</label>
+                            <input type="text" id="inputTitle" class="form-control" placeholder="Contoh: AC Bocor di R.201" required minlength="5">
                         </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold small text-secondary">LOKASI</label>
+                                <select id="inputFacility" class="form-select" required>
+                                    <option value="" selected disabled>Pilih Lokasi...</option>
+                                    <option value="Gedung A">Gedung A (Kuliah)</option>
+                                    <option value="Gedung B">Gedung B (Lab)</option>
+                                    <option value="Kantin">Kantin Utama</option>
+                                    <option value="Parkiran">Area Parkir</option>
+                                    <option value="Perpustakaan">Perpustakaan</option>
+                                    <option value="Toilet">Toilet Umum</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold small text-secondary">FOTO BUKTI (Opsional)</label>
+                                <input type="file" id="inputImage" class="form-control" accept="image/*">
+                                <small class="text-muted" style="font-size: 10px;">Max: 2MB</small>
+                            </div>
+                        </div>
+
                         <div class="mb-3">
-                            <label class="form-label fw-bold small">LOKASI</label>
-                            <select id="inputFacility" class="form-select" required>
-                                <option value="" selected>Pilih Lokasi...</option>
-                                <option value="Gedung A">Gedung A</option>
-                                <option value="Gedung B">Gedung B</option>
-                                <option value="Kantin">Kantin</option>
-                                <option value="Parkiran">Parkiran</option>
-                            </select>
+                            <label class="form-label fw-bold small text-secondary">DESKRIPSI KERUSAKAN</label>
+                            <textarea id="inputDesc" class="form-control" rows="3" placeholder="Jelaskan detail kerusakan..." required minlength="10"></textarea>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold small">DESKRIPSI</label>
-                            <textarea id="inputDesc" class="form-control" rows="3" required minlength="10"></textarea>
+                        
+                        <div class="mb-3 d-none" id="recaptcha-container">
+                            <div class="g-recaptcha" data-sitekey="YOUR_SITE_KEY"></div>
                         </div>
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">Kirim Laporan</button>
+
+                        <div class="d-grid pt-2">
+                            <button type="submit" class="btn btn-primary fw-bold">Kirim Laporan</button>
                         </div>
                     </form>
                 </div>
@@ -99,216 +100,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // === AUTO SWITCH URL ===
-        let API_URL = "";
-        if (window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost") {
-            API_URL = "http://127.0.0.1:8000";
-        } else {
-            API_URL = "https://backend-service-255243454378.asia-southeast2.run.app"; 
-        }
-
-        // Cek Login State
-        const token = localStorage.getItem('token');
-        const username = localStorage.getItem('username'); // Ambil NIM dari storage
-        let currentTab = 'all';
-
-        // === 1. LOGIC UI NAVBAR ===
-        if (token) {
-            document.getElementById('guest-nav').classList.add('d-none');
-            document.getElementById('user-nav').classList.remove('d-none');
-            document.getElementById('filter-tabs').classList.remove('d-none');
-            
-            // 👇 FIX: Tampilkan NIM/Username yang bener
-            if(username && username !== 'undefined') {
-                document.getElementById('username-display').innerText = username;
-            }
-        }
-
-        function logout() {
-            localStorage.clear();
-            window.location.href = 'login.html'; // Redirect ke login biar bersih
-        }
-
-        // === 2. FUNGSI SWITCH TAB ===
-        function switchTab(tab) {
-            currentTab = tab;
-            // Update UI Button Active
-            const btns = document.getElementById('filter-tabs').children;
-            btns[0].classList.toggle('active', tab === 'all');
-            btns[1].classList.toggle('active', tab === 'mine');
-            
-            loadReports(); 
-        }
-
-        function getBadge(status) {
-            const s = status.toLowerCase();
-            if (s.includes('selesai')) return 'bg-success';
-            if (s.includes('pending')) return 'bg-danger';
-            return 'bg-warning text-dark';
-        }
-
-        // === 3. LOAD REPORTS ===
-        async function loadReports() {
-            const container = document.getElementById("reports");
-            // Reset Container biar gak numpuk
-            container.innerHTML = `<div class="col-12 text-center mt-5"><div class="spinner-border text-primary"></div></div>`;
-
-            try {
-                let endpoint = '/reports'; 
-                let headers = {};
-
-                // 👇 LOGIC FILTER YANG BENAR
-                if (currentTab === 'mine') {
-                    if (!token) { alert("Login dulu bos"); return; }
-                    endpoint = '/my-reports'; // Endpoint khusus punya saya
-                    headers = { 'Authorization': `Bearer ${token}` };
-                }
-
-                const res = await fetch(`${API_URL}${endpoint}`, { headers: headers });
-                const data = await res.json();
-
-                if (data.length === 0) {
-                    container.innerHTML = `<div class="col-12 text-center text-muted">Belum ada laporan.</div>`;
-                    return;
-                }
-
-// === FUNGSI loadReports() ===
-
-container.innerHTML = data.map(r => {
-    const isLiked = localStorage.getItem(`liked_${r.id}`);
-    const btnClass = isLiked ? 'btn-primary text-white' : 'btn-light text-primary';
-    const disabledAttr = isLiked ? 'disabled' : '';
-
-    return `
-    <div class="col-md-6 col-lg-4">
-        <div class="card h-100 shadow-sm border-0 p-3">
-            <div class="d-flex justify-content-between mb-2">
-                <span class="badge bg-secondary opacity-75">${r.facility}</span>
-                <span class="badge ${getBadge(r.status)} rounded-pill">${r.status}</span>
-            </div>
-            
-            <h5 class="fw-bold mb-1">${r.title}</h5>
-            
-            <small class="text-muted d-block mb-2" style="font-size: 0.75rem">
-                Oleh: <strong>${r.username || 'Anonim'}</strong>
-            </small>
-
-            <p class="text-secondary small text-truncate">${r.description}</p>
-            
-            <div class="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
-                <button id="btn-like-${r.id}" onclick="upvote(${r.id})" class="btn btn-sm ${btnClass} border" ${disabledAttr}>
-                    <i class="fas fa-thumbs-up"></i> <span id="likes-${r.id}">${r.likes || 0}</span>
-                </button>
-                
-                <a href="detail.html?id=${r.id}" class="btn btn-sm btn-outline-primary rounded-pill">Lihat Detail</a>
-            </div>
-        </div>
-    </div>
-    `;
-}).join("");
-
-            } catch (error) {
-                console.error(error);
-                container.innerHTML = `<div class="alert alert-danger">Gagal memuat data.</div>`;
-            }
-        }
-
-        // === 4. FITUR UPVOTE ===
-// === 4. FITUR UPVOTE (UPDATED SECURITY) ===
-        async function upvote(id) {
-            // 1. Cek Login Dulu (Karena Backend sekarang menolak Guest)
-            if (!token) {
-                alert("⚠️ Eits, Login dulu bos buat nge-like!");
-                window.location.href = "login.html";
-                return;
-            }
-
-            // 2. Cek LocalStorage (Biar gak spam klik)
-            if (localStorage.getItem(`liked_${id}`)) {
-                alert("Eits, satu orang satu suara ya! 😉");
-                return;
-            }
-
-            try {
-                // Optimistic UI (Update angka duluan biar kerasa cepet)
-                const likeCount = document.getElementById(`likes-${id}`);
-                const btn = document.getElementById(`btn-like-${id}`);
-                
-                let current = parseInt(likeCount.innerText);
-                likeCount.innerText = current + 1;
-
-                // Ubah tampilan tombol jadi biru
-                btn.classList.remove('btn-light', 'text-primary');
-                btn.classList.add('btn-primary', 'text-white');
-                btn.disabled = true;
-
-                // Tandai di LocalStorage
-                localStorage.setItem(`liked_${id}`, "sudah");
-
-                // 3. KIRIM REQUEST KE BACKEND (WAJIB BAWA TOKEN)
-                const res = await fetch(`${API_URL}/reports/${id}/upvote`, { 
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}` // <--- INI PENTING!
-                    }
-                });
-
-                if (!res.ok) {
-                    // Kalau backend nolak (misal token expired), balikin UI-nya
-                    alert("Gagal upvote: Sesi habis, silakan login lagi.");
-                    localStorage.removeItem(`liked_${id}`);
-                    window.location.reload();
-                }
-                
-            } catch (e) {
-                console.error(e);
-                alert("Gagal upvote karena koneksi error.");
-            }
-        }
-
-        // === 5. CEK LOGIN SEBELUM LAPOR ===
-        function checkAuthAndOpenModal() {
-            if (!token) {
-                if(confirm("Anda harus login untuk melapor. Masuk sekarang?")) {
-                    window.location.href = "login.html";
-                }
-            } else {
-                new bootstrap.Modal(document.getElementById('addReportModal')).show();
-            }
-        }
-
-        // Logic Submit Form (Wajib Token)
-        document.getElementById('reportForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const payload = {
-                title: document.getElementById('inputTitle').value,
-                facility: document.getElementById('inputFacility').value,
-                description: document.getElementById('inputDesc').value
-            };
-
-            try {
-                const res = await fetch(`${API_URL}/reports`, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}` // <--- Token dikirim di sini
-                    },
-                    body: JSON.stringify(payload)
-                });
-                
-                if (res.ok) {
-                    alert("Berhasil lapor!");
-                    bootstrap.Modal.getInstance(document.getElementById('addReportModal')).hide();
-                    document.getElementById('reportForm').reset();
-                    loadReports();
-                } else {
-                    alert("Gagal mengirim laporan. Pastikan Anda sudah login.");
-                }
-            } catch (error) { alert("Error koneksi!"); }
-        });
-
-        loadReports();
-    </script>
+    <script src="static/js/config.js"></script>
+    <script src="static/js/app.js"></script>
 </body>
 </html>

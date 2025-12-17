@@ -1,131 +1,78 @@
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tracking Laporan</title>
+    <title>Detail Laporan - Facility Watch</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        body {
-            background-color: #f4f6f9;
-        }
-    </style>
+    <link rel="stylesheet" href="static/css/style.css">
 </head>
 
 <body>
     <div class="container py-5">
         <div class="row justify-content-center">
             <div class="col-md-8">
-                <a href="index.html" class="text-decoration-none text-muted mb-3 d-inline-block">← Kembali ke
-                    Dashboard</a>
+                <a href="index.html" class="text-decoration-none text-muted mb-3 d-inline-block hover-underline">
+                    <i class="fas fa-arrow-left me-1"></i> Kembali ke Dashboard
+                </a>
 
                 <div class="card shadow-lg border-0 rounded-4 overflow-hidden">
                     <div class="card-header bg-white p-4 border-bottom">
                         <div class="d-flex justify-content-between align-items-center">
-                            <h4 class="fw-bold mb-0 text-primary">Detail Laporan</h4>
-                            <span id="badge-status" class="badge rounded-pill px-3 py-2">Loading...</span>
+                            <div>
+                                <h5 class="fw-bold mb-0 text-primary">Detail Laporan</h5>
+                                <small class="text-muted">ID Laporan: <span id="report-id-display">Auto</span></small>
+                            </div>
+                            <span id="badge-status" class="badge bg-secondary rounded-pill px-3 py-2">Loading...</span>
                         </div>
                     </div>
 
                     <div class="card-body p-4">
-                        <h2 class="fw-bold text-dark mb-3" id="d-title">...</h2>
-                        <div class="d-flex gap-4 mb-4 text-muted">
-                            <div><i class="fas fa-map-marker-alt me-2"></i><span id="d-facility">-</span></div>
-                            <div><i class="far fa-clock me-2"></i><span id="d-time">-</span></div>
+                        <h2 class="fw-bold text-dark mb-3" id="d-title">Memuat data...</h2>
+                        <div class="d-flex gap-4 mb-4 text-muted small text-uppercase fw-bold">
+                            <div><i class="fas fa-map-marker-alt me-2 text-primary"></i><span id="d-facility">-</span></div>
+                            <div><i class="far fa-clock me-2 text-primary"></i><span id="d-time">-</span></div>
+                        </div>
+
+                        <div id="image-container" class="d-none text-center mb-4">
+                            <img id="d-image" src="" alt="Bukti Laporan" class="evidence-img">
                         </div>
 
                         <hr class="my-4">
 
-                        <h6 class="fw-bold text-uppercase text-muted small">Deskripsi Masalah</h6>
-                        <p class="fs-5 text-secondary" id="d-desc">...</p>
+                        <h6 class="fw-bold text-uppercase text-muted small mb-2">Deskripsi Masalah</h6>
+                        <p class="fs-5 text-secondary lh-base" id="d-desc">...</p>
 
-                        <div class="mt-5 p-4 bg-light rounded-3">
-                            <h6 class="fw-bold text-uppercase text-muted small mb-3">Status Tracking</h6>
-                            <div class="position-relative m-4">
+                        <div class="mt-5 p-4 bg-light rounded-3 border">
+                            <h6 class="fw-bold text-uppercase text-muted small mb-4 text-center">Status Pengerjaan</h6>
+                            
+                            <div class="timeline-container">
                                 <div class="progress" style="height: 4px;">
-                                    <div id="progress-bar" class="progress-bar" role="progressbar" style="width: 0%">
-                                    </div>
+                                    <div id="progress-bar" class="progress-bar bg-secondary" role="progressbar" style="width: 0%"></div>
                                 </div>
-                                <div class="position-absolute top-0 start-0 translate-middle btn btn-sm btn-primary rounded-pill"
-                                    style="width: 2rem; height:2rem;">1</div>
-                                <div class="position-absolute top-0 start-50 translate-middle btn btn-sm btn-secondary rounded-pill"
-                                    id="step-2" style="width: 2rem; height:2rem;">2</div>
-                                <div class="position-absolute top-0 start-100 translate-middle btn btn-sm btn-secondary rounded-pill"
-                                    id="step-3" style="width: 2rem; height:2rem;">3</div>
+                                
+                                <div class="position-absolute top-0 start-0 translate-middle timeline-step btn btn-sm btn-primary rounded-circle shadow-sm">1</div>
+                                
+                                <div class="position-absolute top-0 start-50 translate-middle timeline-step btn btn-sm btn-secondary rounded-circle shadow-sm" id="step-2">2</div>
+                                
+                                <div class="position-absolute top-0 start-100 translate-middle timeline-step btn btn-sm btn-secondary rounded-circle shadow-sm" id="step-3">3</div>
                             </div>
-                            <div class="d-flex justify-content-between mt-2 small fw-bold">
-                                <span>Laporan Diterima</span>
-                                <span class="text-center ms-2">Sedang Dikerjakan</span>
+
+                            <div class="d-flex justify-content-between mt-3 small fw-bold text-muted">
+                                <span>Diterima</span>
+                                <span class="text-center ms-2">Dikerjakan</span>
                                 <span>Selesai</span>
                             </div>
                         </div>
+
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <script>
-        // ⚠️ GANTI URL INI PAS DEPLOY
-        // === LOGIC AUTO-SWITCH URL ===
-        let API_URL = "";
-
-        // Cek apakah browser dibuka di Localhost?
-        if (window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost") {
-            // Kalo iya, tembak ke Backend Lokal
-            API_URL = "http://127.0.0.1:8000";
-            console.log("🔧 Running in Development Mode");
-        } else {
-            // Kalo enggak (berarti di Cloud), tembak ke Backend Cloud Run
-            // MASUKKAN URL CLOUD RUN LU DI SINI (Tanpa slash di akhir)
-            API_URL = "https://backend-service-255243454378.asia-southeast2.run.app";
-            console.log("☁️ Running in Production Mode");
-        }
-
-        const urlParams = new URLSearchParams(window.location.search);
-        const id = urlParams.get('id');
-
-        async function loadDetail() {
-            try {
-                const res = await fetch(`${API_URL}/reports/${id}`);
-                const data = await res.json();
-
-                document.getElementById('d-title').innerText = data.title;
-                document.getElementById('d-facility').innerText = data.facility;
-                document.getElementById('d-desc').innerText = data.description;
-                document.getElementById('d-time').innerText = new Date(data.created_at).toLocaleString('id-ID');
-
-                // Logic Visual Timeline
-                const badge = document.getElementById('badge-status');
-                const bar = document.getElementById('progress-bar');
-                const step2 = document.getElementById('step-2');
-                const step3 = document.getElementById('step-3');
-
-                badge.innerText = data.status;
-
-                if (data.status === 'Pending') {
-                    badge.className = 'badge bg-danger rounded-pill px-3 py-2';
-                    bar.className = 'progress-bar bg-danger';
-                    bar.style.width = '0%';
-                } else if (data.status === 'Proses' || data.status === 'In Progress') { // Sesuaikan string statusmu
-                    badge.className = 'badge bg-warning text-dark rounded-pill px-3 py-2';
-                    bar.className = 'progress-bar bg-warning';
-                    bar.style.width = '50%';
-                    step2.className = 'position-absolute top-0 start-50 translate-middle btn btn-sm btn-warning rounded-pill';
-                } else if (data.status === 'Selesai' || data.status === 'Completed') {
-                    badge.className = 'badge bg-success rounded-pill px-3 py-2';
-                    bar.className = 'progress-bar bg-success';
-                    bar.style.width = '100%';
-                    step2.className = 'position-absolute top-0 start-50 translate-middle btn btn-sm btn-success rounded-pill';
-                    step3.className = 'position-absolute top-0 start-100 translate-middle btn btn-sm btn-success rounded-pill';
-                }
-
-            } catch (error) { alert("Gagal load data"); }
-        }
-        loadDetail();
-    </script>
+    <script src="static/js/config.js"></script>
+    <script src="static/js/detail.js"></script>
 </body>
-
 </html>
