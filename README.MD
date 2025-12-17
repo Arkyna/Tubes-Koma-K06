@@ -144,9 +144,70 @@ project/
 
 ---
 
+
+
+---
+
 ## **Deployment Workflow (CI/CD)**
 
-Project ini menerapkan **Automated Deployment** menggunakan Google Cloud Build yang terintegrasi dengan **Artifact Registry**.
+Project ini menerapkan **Manual Deployment** dan  **Automated Deployment** menggunakan Google Cloud Build yang terintegrasi dengan **Artifact Registry**.
+
+## **Manual Infrastructure Provisioning (Initial Setup)**
+
+Sebelum pipeline CI/CD dapat berjalan, infrastruktur dasar harus disiapkan secara manual (One-time Setup) melalui Google Cloud Console atau Cloud Shell.
+
+### **1. Network & Security (VPC)**
+* **VPC Access Connector:** Buat connector di region `asia-southeast2` (misal: `connector-jakarta`) untuk menjembatani Cloud Run dengan layanan Private IP.
+* **Secret Manager:** Buat secret berikut untuk keamanan kredensial:
+    * `DB_USER` & `DB_PASS` (Kredensial PostgreSQL)
+    * `JWT_SECRET` (Key enkripsi token)
+    * `REG_CODE` (Kode validasi registrasi)
+
+### **2. Database & Cache (Private Network)**
+* **Cloud SQL:** Buat instance PostgreSQL 14.
+    * *Networking:* Matikan Public IP, aktifkan **Private IP**.
+    * *Connection:* Hubungkan ke VPC default.
+* **Memorystore for Redis:** Buat instance Redis Basic/Standard.
+    * *Networking:* Aktifkan **Private Service Access** ke VPC yang sama.
+    * *Catat:* IP Address Redis (misal: `10.x.x.x`).
+
+### **3. Artifact Registry**
+* Buat repository Docker format dengan nama (misal: `facility-repo`) di region `asia-southeast2`.
+
+---
+
+## **Initial Deployment Command (Bootstrap)**
+
+Setelah infrastruktur siap, lakukan deployment pertama secara manual untuk menginisialisasi service di Cloud Run.
+
+**1. Deploy Backend (Connect to VPC & Secrets):**
+```bash
+# Build Image
+gcloud builds submit --tag asia-southeast2-docker.pkg.dev/[PROJECT-ID]/[REPO-NAME]/backend:v1 ./backend 
+
+# Deploy Service
+gcloud run deploy backend-service \
+  --image asia-southeast2-docker.pkg.dev/[PROJECT-ID]/[REPO-NAME]/backend:v1 \
+  --region asia-southeast2 \
+  --allow-unauthenticated \
+  --vpc-connector [CONNECTOR-NAME] \
+  --set-env-vars DB_HOST=[IP-PRIVATE-SQL],DB_NAME=facility_db \
+  --set-env-vars REDIS_HOST=[IP-PRIVATE-REDIS],REDIS_PORT=6379 \
+  --set-secrets DB_USER=projects/[PROJECT-ID]/secrets/DB_USER:latest \
+  --set-secrets DB_PASS=projects/[PROJECT-ID]/secrets/DB_PASS:latest \
+  --set-secrets JWT_SECRET=projects/[PROJECT-ID]/secrets/JWT_SECRET:latest \
+  --set-secrets REG_CODE=projects/[PROJECT-ID]/secrets/REG_CODE:latest
+
+  **2. Deploy Frontend:**
+  # Build Image
+``` gcloud builds submit --tag asia-southeast2-docker.pkg.dev/[PROJECT-ID]/[REPO-NAME]/frontend:v1 ./frontend
+
+# Deploy Service
+gcloud run deploy frontend-service \
+  --image asia-southeast2-docker.pkg.dev/[PROJECT-ID]/[REPO-NAME]/frontend:v1 \
+  --region asia-southeast2 \
+  --allow-unauthenticated
+```
 
 ### **Mekanisme Otomatisasi**
 Deployment dikonfigurasi menggunakan **Cloud Build Triggers**:
