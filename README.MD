@@ -31,7 +31,7 @@ Aplikasi menggunakan pendekatan **Hybrid Serverless** dengan isolasi jaringan un
 
 ### **2. Application Layer (Backend)**
 - **Service:** Cloud Run (FastAPI Python).
-- **Performance:** Menggunakan **Redis Caching** (Cache-Aside Pattern) untuk mempercepat load data[cite: 63].
+- **Performance:** Menggunakan **Redis Caching** (Cache-Aside Pattern) untuk mempercepat load data.
 - **Resiliency:** Fitur **Fail-Safe**; jika Redis down, sistem otomatis fallback ke Database.
 - **Connectivity:** Menggunakan **Serverless VPC Access Connector** untuk komunikasi privat ke Data Layer.
 
