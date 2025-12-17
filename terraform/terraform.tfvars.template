@@ -1,0 +1,21 @@
+# === REAL CONFIGURATION FOR POWERFUL ANCHOR ===
+
+project_id = ""
+region     = ""
+
+# Network
+vpc_connector_name = ""
+
+# Database
+db_instance_name = ""
+db_name          = ""
+
+# Redis
+redis_instance_name = ""
+
+# Cloud Run Services
+backend_service_name = ""
+backend_image_url    = ""
+
+frontend_service_name = ""
+frontend_image_url    = ""

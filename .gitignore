@@ -1,3 +1,19 @@
-backend/__pycache__/main.cpython-311.pyc
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.env
+
+# Credentials & Secrets
+backend/cred/
+terraform/terraform.tfvars
+*.json
+*.pem
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# local db
 backend/local_test.db
-backend/__pycache__
