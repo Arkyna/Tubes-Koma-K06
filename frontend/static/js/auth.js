@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
             errorAlert.classList.add('d-none');
 
             try {
-                // Panggil API (URL dari config.js)
+                console.log(`Target URL: ${CONFIG.API_URL}/login`);
                 const res = await fetch(`${CONFIG.API_URL}/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -61,9 +61,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-
-    // === LOGIC REGISTER (AKAN DATANG) ===
-// ... (Kode Login yang sebelumnya ada di atas sini biarkan saja) ...
 
     // === LOGIC REGISTER ===
     const registerForm = document.getElementById('registerForm');
