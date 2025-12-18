@@ -1,46 +1,54 @@
-from fastapi import FastAPI, Depends, HTTPException, status, Header, File, UploadFile, Form
+# main.py
+
+from fastapi import FastAPI, Depends, HTTPException, status, Header, File, UploadFile, Form # <--- Form kembali
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.encoders import jsonable_encoder # <--- Ini tadi hilang
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import text 
 from jose import jwt, JWTError
-from fastapi.encoders import jsonable_encoder
-from google.cloud import storage # Import GCS Library
+from google.cloud import storage 
 import redis
-import json
+import json  # <--- Library standar ini tadi kau buang
 import os
 import uuid
-import datetime
 import glob
+import datetime # Kadang butuh buat datetime object
 
-# Import modules
+# Import modules (Pastikan file-file ini ada di folder yang sama)
 from config import ALLOWED_ORIGINS
-from database import engine, get_db, Base, SessionLocal
-from models import ReportModel, UserModel, ReportLike
+from database import get_db, SessionLocal 
+from models import UserModel, ReportModel, ReportLike # <--- Pastikan semua Model terpanggil
 from schemas import LoginRequest, RegisterRequest, ReportUpdate
-from auth import get_password_hash, verify_password, create_access_token, SECRET_KEY, ALGORITHM
+from auth import (
+    get_password_hash, 
+    verify_password,      # <--- Ini tadi ketinggalan
+    create_access_token, 
+    SECRET_KEY, 
+    ALGORITHM
+)
 
 # Init App
 app = FastAPI()
 
-# Bikin Tabel Otomatis
-Base.metadata.create_all(bind=engine)
-
+# Kita bungkus ini biar gak bikin app crash kalau db belum dimigrasi
 def create_default_admin():
-    from database import SessionLocal
     db = SessionLocal()
-    
     target_username = os.getenv("ADMIN_USER", "admin")
     target_password = os.getenv("ADMIN_PASS", "admin123") 
     
     try:
-        # Cek apakah admin sudah ada?
+        # Cek dulu apakah tabel users beneran ada? 
+        # (Jaga-jaga kalau kamu lupa run alembic upgrade)
+        try:
+            db.execute(text("SELECT 1 FROM users LIMIT 1")) 
+        except Exception:
+            print("⏳ Tabel 'users' belum ada. Skip bikin admin. Jalankan 'alembic upgrade head' dulu!")
+            return
+
         user = db.query(UserModel).filter(UserModel.username == target_username).first()
-        
         if not user:
-            print(f"👤 Creating super admin user: {target_username}...")
-            # Hash password dulu!
+            print(f"👤 Creating super admin: {target_username}...")
             hashed_pw = get_password_hash(target_password)
-            
             admin_user = UserModel(
                 username=target_username,
                 password_hash=hashed_pw,
@@ -48,21 +56,22 @@ def create_default_admin():
             )
             db.add(admin_user)
             db.commit()
-            print("✅ Admin created successfully!")
+            print("✅ Admin created!")
         else:
-            print("✅ Admin user already exists. Skipping.")
+            print("✅ Admin exists.")
             
     except Exception as e:
         print(f"⚠️ Error creating admin: {e}")
     finally:
         db.close()
 
+# Panggil fungsi admin (Akan skip otomatis kalau tabel belum ready)
 create_default_admin()
 
 # CORS Setup
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,  # <--- Pakai variabel dari config.py
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -90,7 +99,6 @@ if cred_files:
     print(f"🔑 Local Credentials Loaded: {cred_files[0]}")
 else:
     print("⚠️ No local credentials found in 'cred/' folder. Assuming Cloud Run mode.")
-# 👆 BATAS KODE TAMBAHAN 👆
 
 # Helper: Upload ke GCS
 def upload_to_gcs(file: UploadFile) -> str:
