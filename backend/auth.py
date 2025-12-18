@@ -4,7 +4,7 @@ from jose import jwt
 import os
 
 # CONFIG
-SECRET_KEY = os.getenv("SECRET_KEY", "fallback_kalo_lupa_set_di_local")
+SECRET_KEY = os.getenv("SECRET_KEY", "defaultsecretkey")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 

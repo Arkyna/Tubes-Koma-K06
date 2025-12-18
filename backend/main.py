@@ -1,27 +1,24 @@
-# main.py
-
-from fastapi import FastAPI, Depends, HTTPException, status, Header, File, UploadFile, Form # <--- Form kembali
+from fastapi import FastAPI, Depends, HTTPException, status, Header, File, UploadFile, Form 
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.encoders import jsonable_encoder # <--- Ini tadi hilang
+from fastapi.encoders import jsonable_encoder 
 from sqlalchemy.orm import Session
 from sqlalchemy import text 
 from jose import jwt, JWTError
 from google.cloud import storage 
 import redis
-import json  # <--- Library standar ini tadi kau buang
+import json  
 import os
 import uuid
 import glob
-import datetime # Kadang butuh buat datetime object
 
-# Import modules (Pastikan file-file ini ada di folder yang sama)
+# Import modules 
 from config import ALLOWED_ORIGINS
 from database import get_db, SessionLocal 
-from models import UserModel, ReportModel, ReportLike # <--- Pastikan semua Model terpanggil
+from models import UserModel, ReportModel, ReportLike 
 from schemas import LoginRequest, RegisterRequest, ReportUpdate
 from auth import (
     get_password_hash, 
-    verify_password,      # <--- Ini tadi ketinggalan
+    verify_password,     
     create_access_token, 
     SECRET_KEY, 
     ALGORITHM
@@ -30,15 +27,13 @@ from auth import (
 # Init App
 app = FastAPI()
 
-# Kita bungkus ini biar gak bikin app crash kalau db belum dimigrasi
+# --- ADMIN CREATION LOGIC ---
 def create_default_admin():
     db = SessionLocal()
     target_username = os.getenv("ADMIN_USER", "admin")
     target_password = os.getenv("ADMIN_PASS", "admin123") 
     
     try:
-        # Cek dulu apakah tabel users beneran ada? 
-        # (Jaga-jaga kalau kamu lupa run alembic upgrade)
         try:
             db.execute(text("SELECT 1 FROM users LIMIT 1")) 
         except Exception:
@@ -65,7 +60,6 @@ def create_default_admin():
     finally:
         db.close()
 
-# Panggil fungsi admin (Akan skip otomatis kalau tabel belum ready)
 create_default_admin()
 
 # CORS Setup
@@ -89,36 +83,27 @@ except Exception as e:
     print(f"⚠️ Redis Gagal: {e}")
     cache = None
 
-# --- GCS CONFIGURATION (BUCKET) ---# --- GCS CONFIGURATION (BUCKET) ---
+# --- GCS CONFIGURATION (Untuk Upload User) ---
 BUCKET_NAME = os.getenv("GCS_BUCKET_NAME", "freports-evidence-001") 
-# Kita cari file .json apapun di dalam folder 'cred'
 cred_files = glob.glob("cred/*.json")
 
 if cred_files:
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = cred_files[0]
     print(f"🔑 Local Credentials Loaded: {cred_files[0]}")
 else:
-    print("⚠️ No local credentials found in 'cred/' folder. Assuming Cloud Run mode.")
+    print("⚠️ No local credentials found. Assuming Cloud Run mode.")
 
 # Helper: Upload ke GCS
 def upload_to_gcs(file: UploadFile) -> str:
     try:
-        # 1. Init Client (Otomatis ambil creds dari Cloud Run Service Account)
         storage_client = storage.Client()
         bucket = storage_client.bucket(BUCKET_NAME)
         
-        # 2. Bikin nama file unik (biar gak bentrok)
         file_extension = file.filename.split(".")[-1]
         unique_filename = f"{uuid.uuid4()}.{file_extension}"
         blob = bucket.blob(unique_filename)
 
-        # 3. Upload!
         blob.upload_from_file(file.file, content_type=file.content_type)
-
-        # 4. Make Public (Optional: Tergantung policy bucket kamu)
-        # blob.make_public() 
-        
-        # 5. Return Public URL
         return blob.public_url
     except Exception as e:
         print(f"❌ GCS Upload Error: {e}")
@@ -145,7 +130,6 @@ def get_current_user(authorization: str = Header(None)):
 def root():
     return {"message": "Facility Watch Backend v2 (With GCS)", "status": "Ready"}
 
-# --- DASHBOARD ADMIN STATS (BARU) ---
 @app.get("/stats")
 def get_dashboard_stats(db: Session = Depends(get_db), user: dict = Depends(get_current_user)):
     if user['role'] != 'admin':
@@ -157,12 +141,9 @@ def get_dashboard_stats(db: Session = Depends(get_db), user: dict = Depends(get_
     
     return {"total": total, "pending": pending, "done": done}
 
-# GET ALL REPORTS
 @app.get("/reports")
 def get_reports(sort_by: str = "newest", db: Session = Depends(get_db)):
-    # Cache key beda-beda tiap sort
     cache_key = f"reports:{sort_by}"
-    
     if cache:
         cached = cache.get(cache_key)
         if cached:
@@ -179,19 +160,16 @@ def get_reports(sort_by: str = "newest", db: Session = Depends(get_db)):
             
     return reports
 
-# CREATE REPORT (UPDATED: Support File Upload)
 @app.post("/reports")
 def create_report(
-    title: str = Form(...),         # Ambil dari Form Data
-    description: str = Form(...),   # Ambil dari Form Data
-    facility: str = Form(...),      # Ambil dari Form Data
-    file: UploadFile = File(None),  # Ambil File (Opsional)
+    title: str = Form(...),
+    description: str = Form(...),
+    facility: str = Form(...),
+    file: UploadFile = File(None),
     db: Session = Depends(get_db), 
     user: dict = Depends(get_current_user)
 ):
     image_url = None
-    
-    # Logic Upload jika ada file
     if file:
         print(f"📸 Uploading image: {file.filename}")
         image_url = upload_to_gcs(file)
@@ -203,21 +181,19 @@ def create_report(
         status="Pending",
         username=user['username'],
         likes=0,
-        image_url=image_url # Pastikan kamu update models.py!
+        image_url=image_url 
     )
     
     db.add(new_report)
     db.commit()
     db.refresh(new_report)
     
-    # Invalidate Cache
     if cache:
         cache.delete("reports:newest")
         cache.delete("reports:likes")
         
     return {"message": "Success", "data": new_report}
 
-# LOGIN
 @app.post("/login")
 def login(creds: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(UserModel).filter(UserModel.username == creds.username).first()
@@ -227,7 +203,6 @@ def login(creds: LoginRequest, db: Session = Depends(get_db)):
     token = create_access_token(data={"sub": user.username, "role": user.role})
     return {"access_token": token, "role": user.role, "username": user.username}
 
-# REGISTER
 @app.post("/register")
 def register(creds: RegisterRequest, db: Session = Depends(get_db)):
     valid_code = os.getenv("REG_CODE", "admin123")
@@ -241,9 +216,6 @@ def register(creds: RegisterRequest, db: Session = Depends(get_db)):
     db.add(user)
     db.commit()
     return {"message": "Registrasi Berhasil"}
-
-# OTHER ENDPOINTS (Detail, My Reports, Upvote, Update, Delete)
-# ... (Sama seperti sebelumnya, salin ulang endpoint di bawah ini) ...
 
 @app.get("/reports/{report_id}")
 def get_detail(report_id: int, db: Session = Depends(get_db)):
@@ -261,38 +233,23 @@ def upvote_report(
     db: Session = Depends(get_db),
     user: dict = Depends(get_current_user)
 ):
-    # 1. Cek Laporan Ada Gak?
     report = db.query(ReportModel).filter(ReportModel.id == report_id).first()
     if not report:
         raise HTTPException(status_code=404, detail="Laporan hilang ditelan bumi")
     
-    # 2. Cek Apakah User INI sudah pernah like laporan INI?
-    # (Mencegah spam jempol)
     existing_like = db.query(ReportLike).filter(
         ReportLike.user_username == user['username'],
         ReportLike.report_id == report_id
     ).first()
 
     if existing_like:
-        # Kalau mau fitur 'Unlike' (Tarik jempol), uncomment ini:
-        # db.delete(existing_like)
-        # report.likes -= 1
-        # db.commit()
-        # return {"message": "Unliked", "likes": report.likes}
-        
-        # Kalau cuma boleh sekali seumur hidup:
         raise HTTPException(status_code=400, detail="Anda sudah vote laporan ini!")
 
-    # 3. Kalau belum like, Masukkan ke Tabel Like
     new_like = ReportLike(user_username=user['username'], report_id=report_id)
     db.add(new_like)
-    
-    # 4. Update Counter di Tabel Report (Biar frontend gampang bacanya)
     report.likes += 1
-    
     db.commit()
     
-    # Hapus cache
     if cache: 
         cache.delete("reports:newest")
         cache.delete("reports:likes")
@@ -302,29 +259,24 @@ def upvote_report(
 @app.put("/reports/{report_id}")
 def update_report(
     report_id: int, 
-    update_data: ReportUpdate, # <--- Pakai Schema Body
+    update_data: ReportUpdate,
     db: Session = Depends(get_db), 
     user: dict = Depends(get_current_user)
 ):
-    # 1. Cek Admin
     if user['role'] != 'admin':
         raise HTTPException(status_code=403, detail="Hanya admin yang boleh update!")
 
-    # 2. Cari Laporan
     report = db.query(ReportModel).filter(ReportModel.id == report_id).first()
     if not report:
         raise HTTPException(status_code=404, detail="Laporan tidak ditemukan")
     
-    # 3. Update Data (Hanya field yang dikirim)
     report.status = update_data.status
     report.priority = update_data.priority
     report.admin_note = update_data.admin_note
     
-    # 4. Commit
     db.commit()
-    db.refresh(report) # Refresh biar dapat data terbaru (termasuk updated_at otomatis)
+    db.refresh(report)
     
-    # 5. Hapus Cache
     if cache: 
         cache.delete("reports:newest")
         cache.delete("reports:likes")
