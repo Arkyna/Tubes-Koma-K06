@@ -23,22 +23,30 @@
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <h5 class="fw-bold mb-0 text-primary">Detail Laporan</h5>
-                                <small class="text-muted">ID Laporan: <span id="report-id-display">Auto</span></small>
+                                <small class="text-muted">ID Laporan: <span id="report-id-display">...</span></small>
                             </div>
-                            <span id="badge-status" class="badge bg-secondary rounded-pill px-3 py-2">Loading...</span>
+                            <span id="badge-header" class="badge bg-secondary rounded-pill px-3 py-2">
+                                <i class="fas fa-spinner fa-spin me-1"></i> Memuat...
+                            </span>
                         </div>
                     </div>
 
                     <div class="card-body p-4">
                         <div class="d-flex justify-content-between align-items-start mb-3">
                             <div>
-                                <span id="badge-status"
-                                    class="badge bg-secondary rounded-pill px-3 py-2">Loading...</span>
                                 <span id="d-priority"></span>
                             </div>
-                            <small class="text-muted fw-bold">
-                                <i class="far fa-clock me-1"></i> <span id="d-time">-</span>
-                            </small>
+                            
+                            <div class="text-muted small mb-3">
+                                <span class="me-3">
+                                    <i class="fas fa-user-circle me-1"></i>
+                                    <span id="d-username" class="fw-bold text-dark">Memuat...</span>
+                                </span>
+                                <span>
+                                    <i class="far fa-clock me-1"></i>
+                                    <span id="d-time">-</span>
+                                </span>
+                            </div>
                         </div>
 
                         <h3 id="d-title" class="fw-bold text-dark mb-1">...</h3>
@@ -64,13 +72,11 @@
                             </div>
                         </div>
 
-                        <h6 class="fw-bold small text-muted mb-3 mt-5 text-center text-uppercase">Timeline Pengerjaan
-                        </h6>
+                        <h6 class="fw-bold small text-muted mb-3 mt-5 text-center text-uppercase">Timeline Pengerjaan</h6>
                         <div class="position-relative m-4">
                             <div class="progress" style="height: 2px;">
                                 <div id="progress-bar" class="progress-bar" role="progressbar" style="width: 0%;"></div>
                             </div>
-
                             <div class="position-absolute top-0 start-0 translate-middle btn btn-sm btn-primary rounded-pill"
                                 style="width: 2rem; height:2rem;">1</div>
                             <div id="step-2"
@@ -86,10 +92,7 @@
                             <span>Selesai</span>
                         </div>
 
-                        <div class="d-grid mt-5">
-                            <a href="index.html" class="btn btn-outline-secondary">Kembali ke Dashboard</a>
                         </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -98,5 +101,4 @@
     <script src="static/js/config.js"></script>
     <script src="static/js/detail.js"></script>
 </body>
-
 </html>

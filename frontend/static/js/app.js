@@ -88,23 +88,38 @@ function renderReports(data, container) {
         const btnClass = isLiked ? 'btn-primary text-white' : 'btn-light text-primary';
         const disabledAttr = isLiked ? 'disabled' : '';
         
-        // Cek apakah ada gambar (Nanti diimplementasi di backend)
-        const imageBadge = r.image_url ? `<span class="badge bg-info text-dark ms-1"><i class="fas fa-camera"></i> Bukti</span>` : '';
+        // --- LOGIKA THUMBNAIL ---
+        let imageHTML = '';
+        if (r.image_url) {
+            // Panggil fungsi dari config.js
+            const thumbUrl = getThumbnailURL(r.image_url);
+            imageHTML = `
+                <div class="ratio ratio-16x9 mb-3 rounded overflow-hidden bg-light">
+                    <img src="${thumbUrl}" 
+                         class="object-fit-cover" 
+                         alt="Bukti Laporan"
+                         loading="lazy"
+                         onerror="this.onerror=null; this.src='${r.image_url}'"> 
+                </div>
+            `;
+            // Penjelasan 'onerror': Kalau thumbnail belum jadi (masih diproses cloud function),
+            // dia otomatis mundur menampilkan gambar asli. Anti-broken image.
+        }
 
         return `
         <div class="col-md-6 col-lg-4">
-            <div class="card h-100 shadow-sm p-3 position-relative">
+            <div class="card h-100 shadow-sm p-3 position-relative border-0">
                 <div class="d-flex justify-content-between mb-2">
-                    <div>
-                        <span class="badge bg-secondary opacity-75"><i class="fas fa-map-marker-alt me-1"></i>${r.facility}</span>
-                        ${imageBadge}
-                    </div>
+                    <span class="badge bg-light text-secondary border"><i class="fas fa-map-marker-alt me-1"></i>${r.facility}</span>
                     <span class="badge ${getBadge(r.status)} rounded-pill">${r.status}</span>
                 </div>
                 
+                ${imageHTML}
+
                 <h5 class="fw-bold mb-1 text-truncate">${r.title}</h5>
                 <small class="text-muted d-block mb-3" style="font-size: 0.8rem">
-                    <i class="fas fa-user-circle me-1"></i>${r.username || 'Anonim'} &bull; <span class="ms-1">${new Date(r.created_at || Date.now()).toLocaleDateString('id-ID')}</span>
+                    <i class="fas fa-user-circle me-1"></i>${r.username || 'Anonim'} &bull; 
+                    <span class="ms-1">${new Date(r.created_at).toLocaleDateString('id-ID')}</span>
                 </small>
 
                 <p class="text-secondary small text-truncate-2">${r.description}</p>
@@ -113,7 +128,7 @@ function renderReports(data, container) {
                     <button id="btn-like-${r.id}" onclick="upvote(${r.id})" class="btn btn-sm ${btnClass} border" ${disabledAttr}>
                         <i class="fas fa-thumbs-up me-1"></i> <span id="likes-${r.id}">${r.likes || 0}</span>
                     </button>
-                    <a href="detail.html?id=${r.id}" class="btn btn-sm btn-outline-primary rounded-pill px-3">Lihat Detail <i class="fas fa-arrow-right ms-1"></i></a>
+                    <a href="detail.html?id=${r.id}" class="btn btn-sm btn-outline-primary rounded-pill px-3">Lihat Detail</a>
                 </div>
             </div>
         </div>
