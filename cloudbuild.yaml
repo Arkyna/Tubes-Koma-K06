@@ -94,3 +94,6 @@ images:
   - 'asia-southeast2-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/backend:latest'
   - 'asia-southeast2-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/frontend:$COMMIT_SHA'
   - 'asia-southeast2-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/frontend:latest'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
