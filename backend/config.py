@@ -1,4 +1,5 @@
-PRODUCTION_FRONTEND_URL = "https://backend-service-255243454378.asia-southeast2.run.app"
+PRODUCTION_FRONTEND_URL = "https://frontend-service-255243454378.asia-southeast2.run.app"
+
 
 # Daftar Whitelist
 ALLOWED_ORIGINS = [
