@@ -1,0 +1,96 @@
+# cloudbuild.yaml
+steps:
+  # =====================================================
+  # 1. BUILD & PUSH BACKEND (Python FastAPI)
+  # =====================================================
+  
+  # Build Backend Image
+  # Kita pakai tag $COMMIT_SHA biar unik, dan 'latest' biar gampang dicari
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build', 
+      '-t', 'asia-southeast2-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/backend:$COMMIT_SHA',
+      '-t', 'asia-southeast2-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/backend:latest',
+      './backend'
+    ]
+    id: 'Build Backend'
+
+  # Push Backend Image ke Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'push', 
+      'asia-southeast2-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/backend',
+      '--all-tags' # Push SHA tag dan latest tag sekaligus
+    ]
+    id: 'Push Backend'
+    waitFor: ['Build Backend']
+
+  # =====================================================
+  # 2. BUILD & PUSH FRONTEND (Nginx) - JALAN PARALEL
+  # =====================================================
+  
+  # Build Frontend Image
+  # waitFor: ['-'] artinya "Jangan tunggu siapa-siapa, langsung jalan!"
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build', 
+      '-t', 'asia-southeast2-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/frontend:$COMMIT_SHA',
+      '-t', 'asia-southeast2-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/frontend:latest',
+      './frontend'
+    ]
+    id: 'Build Frontend'
+    waitFor: ['-'] 
+
+  # Push Frontend Image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'push', 
+      'asia-southeast2-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/frontend',
+      '--all-tags'
+    ]
+    id: 'Push Frontend'
+    waitFor: ['Build Frontend']
+
+  # =====================================================
+  # 3. DEPLOY KE CLOUD RUN (Sequential)
+  # =====================================================
+
+  # Deploy Backend Service
+  # Kita pakai image yang baru saja di-push ($COMMIT_SHA)
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'backend-service' # Pastikan nama servicemu sama persis!
+      - '--image'
+      - 'asia-southeast2-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/backend:$COMMIT_SHA'
+      - '--region'
+      - '$_REGION'
+    id: 'Deploy Backend'
+    waitFor: ['Push Backend'] # Tunggu Backend selesai di-push
+
+  # Deploy Frontend Service
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'frontend-service' # Pastikan nama servicemu sama persis!
+      - '--image'
+      - 'asia-southeast2-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/frontend:$COMMIT_SHA'
+      - '--region'
+      - '$_REGION'
+    id: 'Deploy Frontend'
+    waitFor: ['Push Frontend', 'Deploy Backend'] # Tunggu Frontend push & Backend deploy beres
+
+# # Config Substitutions (Variabel)
+# substitutions:
+#   _REGION: 'asia-southeast2'
+#   _REPO_NAME: 'cloud-run-source-deploy' # setting ini di cloud trigger mu
+
+images:
+  - 'asia-southeast2-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/backend:$COMMIT_SHA'
+  - 'asia-southeast2-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/backend:latest'
+  - 'asia-southeast2-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/frontend:$COMMIT_SHA'
+  - 'asia-southeast2-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/frontend:latest'
