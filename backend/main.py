@@ -13,6 +13,7 @@ import datetime
 import glob
 
 # Import modules
+from config import ALLOWED_ORIGINS
 from database import engine, get_db, Base, SessionLocal
 from models import ReportModel, UserModel, ReportLike
 from schemas import LoginRequest, RegisterRequest, ReportUpdate
@@ -61,7 +62,7 @@ create_default_admin()
 # CORS Setup
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,  # <--- Pakai variabel dari config.py
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
