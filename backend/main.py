@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, status, Header, File, UploadFile, Form 
+from fastapi import FastAPI, Depends, HTTPException, status, Header, File, UploadFile, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.encoders import jsonable_encoder 
 from sqlalchemy.orm import Session
@@ -10,6 +10,7 @@ import json
 import os
 import uuid
 import glob
+import time
 
 # Import modules 
 from config import ALLOWED_ORIGINS
@@ -26,6 +27,25 @@ from auth import (
 
 # Init App
 app = FastAPI()
+
+
+# MIDDLEWARE PENGHITUNG WAKTU REQUEST
+@app.middleware("http")
+async def add_process_time_header(request: Request, call_next):
+    start_time = time.time()
+    
+    response = await call_next(request)
+    
+    process_time = (time.time() - start_time) * 1000 # Convert ke ms
+    formatted_process_time = f"{process_time:.2f}"
+    
+    # Menambahkan header custom supaya bisa dilihat di Postman/Browser Network Tab
+    response.headers["X-Process-Time"] = formatted_process_time
+    
+    # Print ke terminal supaya matamu bisa melihat kebenarannya
+    print(f"⏱️  [{request.method} {request.url.path}] selesai dalam {formatted_process_time}ms")
+    
+    return response
 
 # --- ADMIN CREATION LOGIC ---
 def create_default_admin():
@@ -76,7 +96,7 @@ redis_host = os.getenv("REDIS_HOST", "localhost")
 redis_port = int(os.getenv("REDIS_PORT", 6379))
 
 try:
-    cache = redis.Redis(host=redis_host, port=redis_port, db=0, socket_connect_timeout=2)
+    cache = redis.Redis(host=redis_host, port=redis_port, db=0, socket_connect_timeout=1)
     cache.ping()
     print(f"✅ Redis Connected: {redis_host}")
 except Exception as e:
@@ -85,7 +105,7 @@ except Exception as e:
 
 # --- GCS CONFIGURATION (Untuk Upload User) ---
 BUCKET_NAME = os.getenv("GCS_BUCKET_NAME", "freports-evidence-001") 
-cred_files = glob.glob("cred/*.json")
+cred_files = glob.glob("cred/*.json") # Local testing only!
 
 if cred_files:
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = cred_files[0]
@@ -143,20 +163,36 @@ def get_dashboard_stats(db: Session = Depends(get_db), user: dict = Depends(get_
 
 @app.get("/reports")
 def get_reports(sort_by: str = "newest", db: Session = Depends(get_db)):
+    t_start = time.time() # Mulai stopwatch internal function
     cache_key = f"reports:{sort_by}"
+    
+    # Coba ambil dari Redis
     if cache:
-        cached = cache.get(cache_key)
-        if cached:
-            return json.loads(cached)
+        try:
+            cached = cache.get(cache_key)
+            if cached:
+                t_end = time.time()
+                durasi = (t_end - t_start) * 1000
+                print(f"🚀 [CACHE HIT] Data diambil dari Redis dalam {durasi:.2f}ms")
+                return json.loads(cached)
+        except redis.ConnectionError:
+            print("⚠️ Redis putus di tengah jalan, lanjut ke DB...")
 
+    # Jika tidak ada di Redis, ambil dari DB (Lama)
+    print("🐌 [CACHE MISS] Query ke Database (SQLAlchemy)...")
     query = db.query(ReportModel)
     if sort_by == "likes":
         reports = query.order_by(ReportModel.likes.desc()).all()
     else:
         reports = query.order_by(ReportModel.id.desc()).all()
     
+    # Simpan ke Redis untuk masa depan (ex=60 detik)
     if cache:
-        cache.set(cache_key, json.dumps(jsonable_encoder(reports)), ex=60)
+        print(f"💾 Menyimpan data ke Redis (Key: {cache_key})...")
+        try:
+            cache.set(cache_key, json.dumps(jsonable_encoder(reports)), ex=60)
+        except Exception as e:
+            print(f"⚠️ Gagal simpan ke Redis: {e}")
             
     return reports
 
