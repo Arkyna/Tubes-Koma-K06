@@ -24,8 +24,17 @@ function getRemainingTimeMs() {
     return remaining > 0 ? remaining : 0;
 }
 function startAutoLogoutTimer() {
+    const token = localStorage.getItem('token');
+
+    // 1. JIKA DIA TAMU (Gak punya token), BIARKAN DIA HIDUP.
+    // Jangan lakukan pengecekan apa-apa, biarkan dia menikmati dashboard.
+    if (!token) {
+        console.log("👀 Mode Tamu: Auto-logout dimatikan.");
+        return; 
+    }
+
+    // 2. JIKA DIA USER (Punya token), BARU CEK APAKAH BASI.
     if (!isTokenValid()) {
-        // Kalau pas load page udah basi, langsung tendang
         forceLogout("Sesi Anda telah berakhir.");
         return;
     }
