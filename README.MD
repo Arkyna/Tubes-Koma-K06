@@ -1,8 +1,8 @@
 # Facility Report System – Three-Tier Infrastructure
 
-**Project Status:** Production
-**Deployment Region:** asia-southeast2 (Jakarta)
-**Endpoint:** [https://www.facilitywatch-174.my.id](https://www.facilitywatch-174.my.id)
+>**Project Status:** Production
+>**Deployment Region:** asia-southeast2 (Jakarta)
+>**Endpoint:** [https://www.facilitywatch-174.my.id](https://www.facilitywatch-174.my.id)
 
 Sistem manajemen pelaporan kerusakan fasilitas kampus berbasis **Google Cloud Platform**. Ini bukan sekadar CRUD murahan. Ini implementasi arsitektur **high-availability**, **scalable**, dan **security-first**, dibangun dengan prinsip **Infrastructure as Code (IaC)**.
 
