@@ -1,4 +1,4 @@
-# Facility Report System – Enterprise Three-Tier Infrastructure
+# Facility Report System – Three-Tier Infrastructure
 
 **Project Status:** Production
 **Deployment Region:** asia-southeast2 (Jakarta)
@@ -135,7 +135,7 @@ Cloud Build akan otomatis melakukan build dan redeploy ke Cloud Run.
 
 * VM tier ringan
 * Auto-scaling ke **0** saat idle
-* Budget alert di $10
+* Budget alert di $30
 
 ---
 
