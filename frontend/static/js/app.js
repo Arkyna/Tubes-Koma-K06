@@ -2,24 +2,42 @@
 const token = localStorage.getItem('token');
 const username = localStorage.getItem('username');
 let currentTab = 'all';
-function checkSessionTimeout() {
-    const loginTime = localStorage.getItem("login_time");
-    const EXPIRE_MINUTES = 30; 
-    
-    if (loginTime && localStorage.getItem("token")) {
-        const timeElapsed = (Date.now() - parseInt(loginTime)) / 1000 / 60;
+const EXPIRE_MINUTES = 30;
 
-        if (timeElapsed >= EXPIRE_MINUTES) {
-            forceLogout("Sesi Anda telah berakhir. Silakan login kembali.");
-        } else {
-            const remainingMs = (EXPIRE_MINUTES - timeElapsed) * 60 * 1000;
-            setTimeout(() => {
-                forceLogout("30 menit telah berlalu. Keamanan memaksa Anda keluar.");
-            }, remainingMs);
-        }
-    }
+function isTokenValid() {
+    const token = localStorage.getItem('token');
+    const loginTime = localStorage.getItem("login_time");
+
+    if (!token || !loginTime) return false;
+
+    const timeElapsed = (Date.now() - parseInt(loginTime)) / 1000 / 60;
+    return timeElapsed < EXPIRE_MINUTES;
 }
 
+function getRemainingTimeMs() {
+    const loginTime = localStorage.getItem("login_time");
+    if (!loginTime) return 0;
+
+    const timeElapsed = (Date.now() - parseInt(loginTime)) / 1000 / 60;
+    const remaining = (EXPIRE_MINUTES - timeElapsed) * 60 * 1000;
+
+    return remaining > 0 ? remaining : 0;
+}
+function startAutoLogoutTimer() {
+    if (!isTokenValid()) {
+        // Kalau pas load page udah basi, langsung tendang
+        forceLogout("Sesi Anda telah berakhir.");
+        return;
+    }
+
+    // Kalau belum basi, pasang bom waktu sesuai sisa waktu
+    const remaining = getRemainingTimeMs();
+    console.log(`⏱️ Sesi akan berakhir dalam ${(remaining / 1000 / 60).toFixed(1)} menit`);
+
+    setTimeout(() => {
+        forceLogout("Waktu habis! Keamanan memaksa Anda keluar.");
+    }, remaining);
+}
 function forceLogout(message) {
     if (message) alert(message);
     localStorage.clear();
@@ -28,7 +46,7 @@ function forceLogout(message) {
 
 // === INIT ===
 document.addEventListener('DOMContentLoaded', () => {
-    checkSessionTimeout();
+    startAutoLogoutTimer();
     initNavbar();
     loadReports();
     setupEventListeners();
@@ -40,8 +58,8 @@ function initNavbar() {
         document.getElementById('guest-nav').classList.add('d-none');
         document.getElementById('user-nav').classList.remove('d-none');
         document.getElementById('filter-tabs').classList.remove('d-none');
-        
-        if(username && username !== 'undefined') {
+
+        if (username && username !== 'undefined') {
             document.getElementById('username-display').innerText = username;
         }
 
@@ -49,7 +67,7 @@ function initNavbar() {
         const role = localStorage.getItem('role'); // Pastikan saat login, role disimpan ya!
         if (role === 'admin') {
             const adminBtn = document.getElementById('btn-admin-panel');
-            if(adminBtn) adminBtn.classList.remove('d-none');
+            if (adminBtn) adminBtn.classList.remove('d-none');
         }
     }
 }
@@ -64,7 +82,7 @@ function switchTab(tab) {
     const btns = document.getElementById('filter-tabs').children;
     btns[0].classList.toggle('active', tab === 'all');
     btns[1].classList.toggle('active', tab === 'mine');
-    loadReports(); 
+    loadReports();
 }
 
 function getBadge(status) {
@@ -80,7 +98,7 @@ async function loadReports() {
     container.innerHTML = `<div class="col-12 text-center mt-5"><div class="spinner-border text-primary"></div><p class="mt-2 text-muted">Mengambil data terbaru...</p></div>`;
 
     try {
-        let endpoint = '/reports'; 
+        let endpoint = '/reports';
         let headers = {};
 
         if (currentTab === 'mine') {
@@ -111,7 +129,7 @@ function renderReports(data, container) {
         const isLiked = localStorage.getItem(`liked_${r.id}`);
         const btnClass = isLiked ? 'btn-primary text-white' : 'btn-light text-primary';
         const disabledAttr = isLiked ? 'disabled' : '';
-        
+
         // --- LOGIKA THUMBNAIL ---
         let imageHTML = '';
         if (r.image_url) {
@@ -162,10 +180,19 @@ function renderReports(data, container) {
 
 // === 3. ACTIONS (UPVOTE & SUBMIT) ===
 async function upvote(id) {
+    // 1. Cek Tamu
     if (!token) {
-        if(confirm("Login dulu biar bisa kasih jempol!")) window.location.href = "login.html";
+        if (confirm("Login dulu biar bisa kasih jempol!")) window.location.href = "login.html";
         return;
     }
+
+    // 2. Cek Basi (Keluarkan ini dari blok if !token)
+    if (!isTokenValid()) {
+        forceLogout("🔒 Sesi habis. Gagal Like.");
+        return;
+    }
+
+    // 3. Cek apakah sudah like
     if (localStorage.getItem(`liked_${id}`)) return;
 
     // Optimistic UI Update
@@ -176,7 +203,7 @@ async function upvote(id) {
     localStorage.setItem(`liked_${id}`, "sudah");
 
     try {
-        await fetch(`${CONFIG.API_URL}/reports/${id}/upvote`, { 
+        await fetch(`${CONFIG.API_URL}/reports/${id}/upvote`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -187,18 +214,44 @@ async function upvote(id) {
 
 function setupEventListeners() {
     // Buka Modal
-    window.checkAuthAndOpenModal = () => {
-        if (!token) {
-            if(confirm("Anda harus login untuk melapor. Masuk sekarang?")) window.location.href = "login.html";
-        } else {
-            new bootstrap.Modal(document.getElementById('addReportModal')).show();
+window.checkAuthAndOpenModal = () => {
+    // 1. Cek apakah dia Tamu (Gak punya token)
+    if (!token) {
+        if (confirm("Anda harus login untuk melapor. Masuk sekarang?")) {
+            window.location.href = "login.html";
         }
-    };
+        return;
+    }
+
+    // 2. Cek apakah tokennya Basi (Punya token, tapi kadaluarsa)
+    if (!isTokenValid()) {
+        forceLogout("🔒 Sesi habis saat Anda tidak aktif. Silakan login lagi.");
+        return;
+    }
+
+    // 3. Kalau lolos keduanya, baru buka gerbang
+    new bootstrap.Modal(document.getElementById('addReportModal')).show();
+};
 
     // Submit Form
-    document.getElementById('reportForm').addEventListener('submit', async function(e) {
+    document.getElementById('reportForm').addEventListener('submit', async function (e) {
         e.preventDefault();
+
+        if (!isTokenValid()) {
+        alert("⚠️ Sesi habis! Tulisan Anda akan disimpan ke draft.");
         
+        // SIMPAN DRAFT DARURAT
+        const draft = {
+            title: document.getElementById('inputTitle').value,
+            desc: document.getElementById('inputDesc').value,
+            facility: document.getElementById('inputFacility').value
+        };
+        localStorage.setItem('report_draft', JSON.stringify(draft));
+        
+        forceLogout("Silakan login ulang untuk melanjutkan.");
+        return;
+    }
+
         const submitBtn = this.querySelector('button[type="submit"]');
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Mengirim...';
@@ -209,10 +262,10 @@ function setupEventListeners() {
         formData.append('title', document.getElementById('inputTitle').value);
         formData.append('facility', document.getElementById('inputFacility').value);
         formData.append('description', document.getElementById('inputDesc').value);
-        
+
         // Ambil file (Kalau user gak pilih file, backend tetep terima FormData kok)
         const fileInput = document.getElementById('inputImage');
-        if(fileInput && fileInput.files[0]) {
+        if (fileInput && fileInput.files[0]) {
             formData.append('file', fileInput.files[0]);
         }
 
@@ -221,10 +274,10 @@ function setupEventListeners() {
             // Browser otomatis set 'multipart/form-data; boundary=...'
             const res = await fetch(`${CONFIG.API_URL}/reports`, {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` }, 
-                body: formData 
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
             });
-            
+
             if (res.ok) {
                 alert("Laporan berhasil dikirim!");
                 bootstrap.Modal.getInstance(document.getElementById('addReportModal')).hide();
@@ -234,9 +287,9 @@ function setupEventListeners() {
                 const err = await res.json();
                 alert("Gagal: " + (err.detail || "Terjadi kesalahan"));
             }
-        } catch (error) { 
+        } catch (error) {
             console.error(error);
-            alert("Error koneksi!"); 
+            alert("Error koneksi!");
         } finally {
             submitBtn.disabled = false;
             submitBtn.innerText = 'Kirim Laporan';

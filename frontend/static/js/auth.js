@@ -36,6 +36,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Fallback kalau username gak dikirim backend
                     localStorage.setItem('username', data.username || usernameInput); 
 
+                    // Simpan waktu login
+                    localStorage.setItem('login_time', Date.now());
+
                     // Redirect sesuai Role
                     if (data.role === 'admin') {
                         window.location.href = "admin.html";
