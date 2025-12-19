@@ -2,9 +2,33 @@
 const token = localStorage.getItem('token');
 const username = localStorage.getItem('username');
 let currentTab = 'all';
+function checkSessionTimeout() {
+    const loginTime = localStorage.getItem("login_time");
+    const EXPIRE_MINUTES = 30; 
+    
+    if (loginTime && localStorage.getItem("token")) {
+        const timeElapsed = (Date.now() - parseInt(loginTime)) / 1000 / 60;
+
+        if (timeElapsed >= EXPIRE_MINUTES) {
+            forceLogout("Sesi Anda telah berakhir. Silakan login kembali.");
+        } else {
+            const remainingMs = (EXPIRE_MINUTES - timeElapsed) * 60 * 1000;
+            setTimeout(() => {
+                forceLogout("30 menit telah berlalu. Keamanan memaksa Anda keluar.");
+            }, remainingMs);
+        }
+    }
+}
+
+function forceLogout(message) {
+    if (message) alert(message);
+    localStorage.clear();
+    window.location.href = 'login.html';
+}
 
 // === INIT ===
 document.addEventListener('DOMContentLoaded', () => {
+    checkSessionTimeout();
     initNavbar();
     loadReports();
     setupEventListeners();
