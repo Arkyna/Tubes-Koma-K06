@@ -1,250 +1,143 @@
-# **Facility Report System – Three-Tier Web Application (Iterasi 2)**
+# Facility Report System – Enterprise Three-Tier Infrastructure
 
-> **Status:** Deployed
+**Project Status:** Production
+**Deployment Region:** asia-southeast2 (Jakarta)
+**Endpoint:** [https://www.facilitywatch-174.my.id](https://www.facilitywatch-174.my.id)
 
-> **Live Demo:** [https://www.facilitywatch-174.my.id](https://www.facilitywatch-174.my.id)
-
-Sistem pelaporan fasilitas kampus berbasis web yang dibangun dengan arsitektur **Secure Three-Tier** di Google Cloud Platform (GCP). Sistem ini dirancang untuk menangani trafik tinggi (High Availability) dan menerapkan standar keamanan Enterprise (Zero Trust Network).
+Sistem manajemen pelaporan kerusakan fasilitas kampus berbasis **Google Cloud Platform**. Ini bukan sekadar CRUD murahan. Ini implementasi arsitektur **high-availability**, **scalable**, dan **security-first**, dibangun dengan prinsip **Infrastructure as Code (IaC)**.
 
 ---
 
-## **Tim Pengembang (Kelompok 06)**
+## 👥 Tim Pengembang (Kelompok 06)
 
-| Nama | NIM |
-|:------|-----|
+| Nama                    | NIM       |
+| ----------------------- | --------- |
 | Jhoel Robert Hutagalung | 122140174 |
-| Muhammad Zada Rizki | 120140156 |
-| [Nama Anggota 3] | [NIM] | [Role] |
+| Muhammad Zada Rizki     | 120140156 |
+| [Nama Anggota 3]        | [NIM]     |
 
 ---
 
-## **Arsitektur Sistem**
+## 🏗️ Arsitektur Infrastruktur
 
+Sistem menerapkan **isolasi jaringan total** untuk mencegah eksploitasi pada lapisan data.
 
+### Layer 1: Presentation (Frontend)
 
-Aplikasi menggunakan pendekatan **Hybrid Serverless** dengan isolasi jaringan untuk keamanan maksimal:
+* **Service:** Cloud Run (Nginx Container)
+* **Entry Point:** Google Global External HTTP(S) Load Balancer
+* **Security:** Managed SSL Certificate (end-to-end encryption)
+* **Optimization:** Cloud CDN untuk static content delivery
 
-### **1. Presentation Layer (Frontend)**
-- **Service:** Cloud Run (Container Nginx serving Static HTML/JS).
-- **Access:** Diakses via **Global HTTP(S) Load Balancer** (Managed SSL).
-- **Security:** Port 80 (HTTP) ditutup total; hanya menerima trafik HTTPS (Port 443).
+### Layer 2: Application (Backend API)
 
-### **2. Application Layer (Backend)**
-- **Service:** Cloud Run (FastAPI Python).
-- **Performance:** Menggunakan **Redis Caching** (Cache-Aside Pattern) untuk mempercepat load data.
-- **Resiliency:** Fitur **Fail-Safe**; jika Redis down, sistem otomatis fallback ke Database.
-- **Connectivity:** Menggunakan **Serverless VPC Access Connector** untuk komunikasi privat ke Data Layer.
+* **Service:** Cloud Run (FastAPI)
+* **Runtime:** Python 3.9+ (Containerized)
+* **Networking:** Serverless VPC Access Connector
+* **Caching:** Cache-Aside Pattern dengan Memorystore (Redis)
 
-### **3. Data Layer (Private Network)**
-- **Database:** Cloud SQL (PostgreSQL 14) - *Private IP Only*.
-- **Cache:** Memorystore for Redis - *Private IP Only*.
-- **Security:** Kredensial database dienkripsi dan dikelola via **GCP Secret Manager**.
+### Layer 3: Data & Storage (Private Tier)
 
----
-## **Topologi Arsitektur**
-![Architecture Diagram](https://github.com/user-attachments/assets/c8e592db-4ff6-4063-adb1-3f13659d2ef8)
-*(Gambar arsitektur yang menunjukkan Global Load Balancer, Cloud Run, dan VPC Connection ke Private SQL/Redis)*
+* **Database:** Cloud SQL (PostgreSQL 14, Private IP Only)
+* **Object Storage:** Google Cloud Storage (foto bukti)
+* **Secrets:** GCP Secret Manager (tidak ada kredensial hardcoded)
 
 ---
 
-## **Fitur Unggulan**
+## 🧰 Tech Stack & Ecosystem
 
-* **⚡ High Performance:** Response time API dioptimalkan dengan in-memory caching (Redis).
-* **🔒 Enhanced Security:**
-    * **Network Isolation:** Database tidak memiliki IP Publik, mencegah serangan brute-force dari internet.
-    * **Secret Management:** Tidak ada kredensial sensitif (password DB) yang di-hardcode dalam source code.
-* **🤖 CI/CD Automation:** Pipeline deployment otomatis menggunakan Google Cloud Build setiap kali ada push ke repository.
-
----
-## **Configuration & Environment Variables**
-
-Aplikasi menggunakan kombinasi Environment Variables (Config) dan Google Secret Manager (Sensitive Data).
-
-| Variable | Tipe | Deskripsi | Default / Value |
-| :--- | :--- | :--- | :--- |
-| `DB_HOST` | Config | Private IP Cloud SQL (via VPC) | `10.x.x.x` |
-| `DB_NAME` | Config | Nama Database | `facility_db` |
-| `REDIS_HOST`| Config | Private IP Redis (via VPC) | `10.x.x.x` |
-| `DB_USER` | **Secret** | Username Database | Managed by Secret Manager |
-| `DB_PASS` | **Secret** | Password Database | Managed by Secret Manager |
-| `JWT_SECRET`| **Secret** | Kunci enkripsi token JWT | Managed by Secret Manager |
-| `SECRET_CODE` | **Secret** | Kode validasi registrasi User | Managed by Secret Manager |
-| `ADMIN_USER`| **Secret** | (Optional) Default Admin Username | Managed by Secret Manager |
-| `ADMIN_PASS`| **Secret** | (Optional) Default Admin Password | Managed by Secret Manager |
----
-## **API Reference**
-
-Backend REST API menggunakan **JWT Authentication**. Beberapa endpoint memerlukan header `Authorization: Bearer <token>`.
-
-| Method | Endpoint | Akses | Deskripsi |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/` | **Public** | Health Check & Mode Info (Cloud/Local). |
-| `POST` | `/register` | **Public** | Daftar akun baru (Wajib input `secret_code`). |
-| `POST` | `/login` | **Public** | Login user untuk mendapatkan **Access Token**. |
-| `GET` | `/reports` | **Public** | Mengambil feed laporan (Cached by Redis). |
-| `POST` | `/reports` | **Auth (User)** | Membuat laporan baru (Cache Invalidation). |
-| `GET` | `/my-reports`| **Auth (User)** | Melihat riwayat laporan milik user sendiri. |
-| `POST` | `/reports/{id}/upvote`| **Auth (User)** | Upvote laporan (Login Required). |
-| `GET` | `/reports/{id}`| **Auth (User)** | Melihat detail satu laporan. |
-| `PUT` | `/reports/{id}` | **Admin Only** | Update status laporan (Pending -> Done). |
-| `DELETE` | `/reports/{id}` | **Admin Only** | Menghapus laporan permanen. |
----
-## **Database Schema**
-
-Menggunakan **PostgreSQL 14** dengan ORM SQLAlchemy.
-
-### **Table: `users`**
-| Column | Type | Constraints | Deskripsi |
-| :--- | :--- | :--- | :--- |
-| `id` | Integer | PK, Auto Inc | ID Unik User |
-| `username` | String(50) | Unique, Index | Username (NIM/Nama) |
-| `password_hash`| String(255)| Not Null | Hash password (bcrypt) |
-| `role` | String(20) | Default: 'admin'| Peran user (`user` atau `admin`) |
-
-### **Table: `reports`**
-| Column | Type | Constraints | Deskripsi |
-| :--- | :--- | :--- | :--- |
-| `id` | Integer | PK, Auto Inc | ID Laporan |
-| `title` | String(100) | Not Null | Judul Laporan |
-| `description`| String(500) | Nullable | Detail Kerusakan |
-| `facility` | String(50) | Not Null | Lokasi/Jenis Fasilitas |
-| `status` | String(20) | Default: 'Pending' | Status Pengerjaan |
-| `username` | String(50) | Nullable | Pemilik Laporan |
-| `likes` | Integer | Default: 0 | Jumlah Upvote |
-| `created_at` | DateTime | Server Default | Waktu dibuat |
----
-
-## **Struktur Repository**
-
-```text
-project/
-│
-├── backend/
-│   ├── auth.py             # Logika Autentikasi (JWT Handler)
-│   ├── database.py         # Konfigurasi Koneksi Database & Redis
-│   ├── main.py             # Entry Point API & Routing
-│   ├── models.py           # Definisi Tabel Database (SQLAlchemy ORM)
-│   ├── schemas.py          # Validasi Data Input/Output (Pydantic)
-│   ├── requirements.txt    # Daftar Dependensi Python
-│   └── Dockerfile          # Konfigurasi Container Backend
-│
-├── frontend/
-│   ├── index.html          # Halaman Utama (Public Feed)
-│   ├── admin.html          # Dashboard Admin (Protected)
-│   ├── login.html          # Halaman Login
-│   ├── register.html       # Halaman Registrasi
-│   ├── detail.html         # Halaman Detail Laporan
-│   ├── script.js           # Logika Frontend (Fetch API)
-│   ├── nginx.conf.template # Konfigurasi Server Nginx
-│   └── Dockerfile          # Konfigurasi Container Frontend
-│
-├── .gitignore              # Daftar file yang diabaikan git
-└── README.md               # Dokumentasi Proyek
-```
+* **IaC:** Terraform v1.5+
+* **Backend:** FastAPI, SQLAlchemy, Pydantic
+* **Frontend:** Vanilla JS, Tailwind CSS
+* **Database:** PostgreSQL, Redis
+* **CI/CD:** Cloud Build, Artifact Registry
+* **Monitoring:** Cloud Logging & Error Reporting
 
 ---
 
+## ⭐ Fitur Unggulan
 
+1. **Event-Driven Image Resizer**
+   Otomatis mengompresi gambar saat upload (cost optimization).
 
----
+2. **Zero Trust Networking**
+   Database dan cache sepenuhnya terisolasi dari internet publik.
 
-## **Deployment Workflow (CI/CD)**
-
-Project ini menerapkan **Manual Deployment** dan  **Automated Deployment** menggunakan Google Cloud Build yang terintegrasi dengan **Artifact Registry**.
-
-## **Manual Infrastructure Provisioning (Initial Setup)**
-
-Sebelum pipeline CI/CD dapat berjalan, infrastruktur dasar harus disiapkan secara manual (One-time Setup) melalui Google Cloud Console atau Cloud Shell.
-
-### **1. Network & Security (VPC)**
-* **VPC Access Connector:** Buat connector di region `asia-southeast2` (misal: `connector-jakarta`) untuk menjembatani Cloud Run dengan layanan Private IP.
-* **Secret Manager:** Buat secret berikut untuk keamanan kredensial:
-    * `DB_USER` & `DB_PASS` (Kredensial PostgreSQL)
-    * `JWT_SECRET` (Key enkripsi token)
-    * `REG_CODE` (Kode validasi registrasi)
-
-### **2. Database & Cache (Private Network)**
-* **Cloud SQL:** Buat instance PostgreSQL 14.
-    * *Networking:* Matikan Public IP, aktifkan **Private IP**.
-    * *Connection:* Hubungkan ke VPC default.
-* **Memorystore for Redis:** Buat instance Redis Basic/Standard.
-    * *Networking:* Aktifkan **Private Service Access** ke VPC yang sama.
-    * *Catat:* IP Address Redis (misal: `10.x.x.x`).
-
-### **3. Artifact Registry**
-* Buat repository Docker format dengan nama (misal: `facility-repo`) di region `asia-southeast2`.
+3. **Custom Domain Infrastructure**
+   Load Balancer global + IP statis + DNS eksternal.
 
 ---
 
-## **Initial Deployment Command (Bootstrap)**
+## 🗄️ Skema Database (Logical Model)
 
-Setelah infrastruktur siap, lakukan deployment pertama secara manual untuk menginisialisasi service di Cloud Run.
+### Table: `users`
 
-**1. Deploy Backend (Connect to VPC & Secrets):**
+| Attribute     | Data Type  | Constraint        |
+| ------------- | ---------- | ----------------- |
+| id            | Integer    | PK, Serial        |
+| username      | String(50) | Unique, Not Null  |
+| password_hash | Text       | Not Null (bcrypt) |
+| role          | String(20) | Default: `user`   |
+
+### Table: `reports`
+
+| Attribute  | Data Type   | Constraint                   |
+| ---------- | ----------- | ---------------------------- |
+| id         | Integer     | PK, Serial                   |
+| title      | String(100) | Not Null                     |
+| facility   | String(50)  | Not Null                     |
+| status     | String(20)  | Pending / In Progress / Done |
+| image_url  | Text        | Nullable                     |
+| created_at | Timestamp   | Default: CURRENT_TIMESTAMP   |
+
+---
+
+## 🔌 API Reference (Overview)
+
+| Endpoint          | Method | Security   | Description                          |
+| ----------------- | ------ | ---------- | ------------------------------------ |
+| /api/login        | POST   | Public     | Generate JWT token                   |
+| /api/reports      | GET    | Public     | Get report feed (Redis optimized)    |
+| /api/reports      | POST   | JWT        | Submit report + trigger image resize |
+| /api/admin/update | PUT    | Admin Only | Update report status                 |
+
+---
+
+## 🚀 Deployment Guide
+
+### Prerequisites
+
+1. GCP SDK installed
+2. Active GCP project with billing enabled
+3. Terraform installed
+
+### Execution Steps
+
 ```bash
-# Build Image
-gcloud builds submit --tag asia-southeast2-docker.pkg.dev/[PROJECT-ID]/[REPO-NAME]/backend:v1 ./backend 
-
-# Deploy Service
-gcloud run deploy backend-service \
-  --image asia-southeast2-docker.pkg.dev/[PROJECT-ID]/[REPO-NAME]/backend:v1 \
-  --region asia-southeast2 \
-  --allow-unauthenticated \
-  --vpc-connector [CONNECTOR-NAME] \
-  --set-env-vars DB_HOST=[IP-PRIVATE-SQL],DB_NAME=facility_db \
-  --set-env-vars REDIS_HOST=[IP-PRIVATE-REDIS],REDIS_PORT=6379 \
-  --set-secrets DB_USER=projects/[PROJECT-ID]/secrets/DB_USER:latest \
-  --set-secrets DB_PASS=projects/[PROJECT-ID]/secrets/DB_PASS:latest \
-  --set-secrets JWT_SECRET=projects/[PROJECT-ID]/secrets/JWT_SECRET:latest \
-  --set-secrets REG_CODE=projects/[PROJECT-ID]/secrets/REG_CODE:latest
-
-  **2. Deploy Frontend:**
-  # Build Image
-``` gcloud builds submit --tag asia-southeast2-docker.pkg.dev/[PROJECT-ID]/[REPO-NAME]/frontend:v1 ./frontend
-
-# Deploy Service
-gcloud run deploy frontend-service \
-  --image asia-southeast2-docker.pkg.dev/[PROJECT-ID]/[REPO-NAME]/frontend:v1 \
-  --region asia-southeast2 \
-  --allow-unauthenticated
+cd terraform
+terraform init
+terraform apply \
+  -var="project_id=YOUR_PROJECT" \
+  -var="db_pass=YOUR_PASS"
 ```
 
-### **Mekanisme Otomatisasi**
-Deployment dikonfigurasi menggunakan **Cloud Build Triggers**:
-
-1.  **Dual-Trigger Setup:**
-    * **Trigger Backend:** Memantau perubahan di direktori `/backend`.
-    * **Trigger Frontend:** Memantau perubahan di direktori `/frontend`.
-
-2.  **Continuous Delivery Flow:**
-    * Setiap `push` ke branch `main` memicu build Docker Image.
-    * Image disimpan di **Google Artifact Registry** (Modern Replacement untuk GCR).
-    * Format Image: `asia-southeast2-docker.pkg.dev/[PROJECT-ID]/[REPO-NAME]/[IMAGE]:tag`
-    * Layanan Cloud Run diperbarui secara *rolling update* (Zero Downtime).
-
-### **Cara Melakukan Update**
-Developer cukup melakukan push code ke repository:
 ```bash
 git add .
-git commit -m "feat: tambah validasi login"
+git commit -m "Final production push"
 git push origin main
 ```
 
-## **Panduan Penggunaan & Demo**
+Cloud Build akan otomatis melakukan build dan redeploy ke Cloud Run.
 
-Berikut adalah skenario untuk menguji fitur-fitur utama aplikasi:
+---
 
-### **1. Public Access (Guest)**
-- Buka URL: `https://www.facilitywatch-174.my.id`
-- User dapat melihat feed laporan kerusakan secara *read-only*.
-- Coba akses endpoint `/reports` di browser, data JSON akan tampil (Public Read).
+## 💸 Cost Awareness
 
-### **2. Admin Registration (Secure)**
-- Buka halaman Register.
-- Masukkan data diri dan **Secret Access Code**.
-- *Note:* Kode rahasia ini divalidasi oleh Backend via Environment Variable (`SECRET_CODE`) untuk mencegah bot/user tidak sah mendaftar sebagai user sembarangan.
+* VM tier ringan
+* Auto-scaling ke **0** saat idle
+* Budget alert di $10
 
-### **3. Admin Dashboard**
-- Login menggunakan akun yang baru dibuat.
-- Admin dapat mengubah status laporan (Pending -> Done) atau menghapus laporan yang tidak valid.
-- Akses ke fitur ini dilindungi oleh **JWT Authentication**.
+---
+
+© 2025 Kelompok 06 – Komputasi Awan ITERA
+Dosen Pengampu: M. Habib Algifari, S.Kom., M.T.I
